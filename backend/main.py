@@ -1,9 +1,22 @@
 from fastapi import FastAPI
 
 from parser import parse_file
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-@app.post("/app")
-def ceva():
-    return list(parse_file())
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/api/status")
+def read_status():
+    return {"status": "Conectat cu succes la backend!"}
