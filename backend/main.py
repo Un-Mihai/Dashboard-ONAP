@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 
+from parser import parse_file
+
 app = FastAPI()
 
 @app.post("/app")
 def ceva():
-    return {"message": "Hello World"}
+    return list(parse_file())
