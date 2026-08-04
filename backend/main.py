@@ -20,3 +20,7 @@ app.add_middleware(
 @app.get("/api/status")
 def read_status():
     return {"status": "Conectat cu succes la backend!"}
+
+@app.post("/api/parsefile")
+def parse_data():
+    return parse_file()
