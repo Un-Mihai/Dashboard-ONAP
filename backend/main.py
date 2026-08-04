@@ -1,7 +1,8 @@
-from fastapi import FastAPI
-
+from fastapi import FastAPI, Depends
 from parser import parse_file
 from fastapi.middleware.cors import CORSMiddleware
+from database import get_db, engine
+
 
 app = FastAPI()
 
@@ -20,3 +21,4 @@ app.add_middleware(
 @app.get("/api/status")
 def read_status():
     return {"status": "Conectat cu succes la backend!"}
+
