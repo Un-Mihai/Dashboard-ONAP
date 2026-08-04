@@ -1,4 +1,6 @@
 from lxml import etree
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 lista_indicatori = ["VS.NCAV.DENOM_CELL_AVAIL",
                     "VS.NCAV.SAMPLES_CELL_AVAIL",
@@ -11,6 +13,16 @@ lista_indicatori = ["VS.NCAV.DENOM_CELL_AVAIL",
                     "VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF",
                     "VS.SBTS_RFM_Energy_Monitoring.MIN_INPUT_VOLTAGE_IN_RF",
                     "VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"]
+
+
+def get_followed_metrics(db: Session):
+
+    query = text("SELECT MEASUREMENT_TYPE FROM dbo.FOLLOWED_METRICS")
+    results = db.execute(query).fetchall()
+
+    return [row._mapping.get("MEASUREMENT_TYPE") for row in results]
+
+
 
 def parse_file():
 
