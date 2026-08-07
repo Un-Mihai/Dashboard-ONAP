@@ -1,50 +1,46 @@
+import re
 from lxml import etree
-from sqlalchemy import text
 from sqlalchemy.orm import Session
+from collections.abc import Generator
 
-lista_indicatori = ["VS.NCAV.DENOM_CELL_AVAIL",
-                    "VS.NCAV.SAMPLES_CELL_AVAIL",
-                    "VS.NCUPNRG.DL_PRB_USED_DATA_NRG",
-                    "VS.NCUPNRG.DL_PRB_UTIL_RATIO_DNOM",
-                    "VS.NCUPNRG.DL_PRB_UTIL_SLOT_MAX_NRG",
-                    "VS.NCUPNRG.UL_PRB_UTIL_RATIO_DNOM",
-                    "VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN",
-                    "VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN",
-                    "VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF",
-                    "VS.SBTS_RFM_Energy_Monitoring.MIN_INPUT_VOLTAGE_IN_RF",
-                    "VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"]
+from file_manager import get_unparsed_files
+from crud import get_followed_metrics
 
 
-def get_followed_metrics(db: Session):
+def parse_file(followed_metrics: list[str], file_name: str) -> Generator[dict[str, str | int], None, None]:
 
-    query = text("SELECT MEASUREMENT_TYPE FROM dbo.FOLLOWED_METRICS")
-    results = db.execute(query).fetchall()
-
-    return [row._mapping.get("MEASUREMENT_TYPE") for row in results]
-
-
-
-def parse_file():
-
-    file_path = "../files/A20260803.1315+0200-20260803.1330+0200_ManagedElement=MRBTS-43620.xml"
+    file_path = "../files/" + file_name
 
     namespace = "http://www.3gpp.org/ftp/specs/archive/28_series/28.532#measData"
 
+    granPeriod_tag = f"{{{namespace}}}granPeriod"
+    measEntity_tag = f"{{{namespace}}}measEntity"
     measInfo_tag = f"{{{namespace}}}measInfo"
     measType_tag = f"{{{namespace}}}measType"
     measValue_tag = f"{{{namespace}}}measValue"
     r_tag = f"{{{namespace}}}r"
 
-    context = etree.iterparse(file_path, events=('start', 'end'))
+    file_data = etree.iterparse(file_path, events=('start', 'end'))
 
     metrics = {}
 
-    for event, elem in context:
+    for event, elem in file_data:
+
+        if event == 'start' and elem.tag == measEntity_tag:
+            localDn_str = elem.get('localDn')
+            node_name = localDn_str.split('=')[1]
+            continue
         
         if event == 'start' and elem.tag == measInfo_tag:
             metrics.clear()
+            continue
 
-        elif event == 'end' and elem.tag == measType_tag and elem.text in lista_indicatori:
+        if event == 'end' and elem.tag == granPeriod_tag:
+            duration_str = elem.get('duration')
+            granularity = re.search(r'\d+', duration_str).group()
+            continue
+
+        if event == 'end' and elem.tag == measType_tag and elem.text in followed_metrics:
             id = elem.get('p')
             metrics[id] = elem.text
 
@@ -53,23 +49,46 @@ def parse_file():
             if parent is not None:
                 parent.remove(elem)
 
-        elif event == 'end' and elem.tag == measValue_tag:
-            cell_id = elem.get('measObjLdn')
+            continue
 
-            for r in elem.findall(r_tag):
-                
-                id = r.get('p')
-                metric_name = metrics.get(id)
+        if event == 'end' and elem.tag == measValue_tag:
+            measObjLdn_string = elem.get('measObjLdn')
 
-                if metric_name is not None:
-                    yield {
-                        "cell": cell_id,
-                        "metric_name": metric_name,
-                        "value": r.text 
-                    }
+            pairs = measObjLdn_string.split(',')
+            measObjLdn_dict = dict(p.split('=', 1) for p in pairs if '=' in p)
+
+            if "NRCELL" in measObjLdn_dict.keys():
+                object_type = "CELL"
+                cell_nr = measObjLdn_dict.get("NRCELL")
+
+                for r in elem.findall(r_tag):
+                    
+                    id = r.get('p')
+                    metric_name = metrics.get(id)
+
+                    if metric_name is not None:
+                        yield {
+                            "node_name": node_name,
+                            "object_type": object_type,
+                            "object_id": int(cell_nr),
+                            "metric_name": metric_name,
+                            "value": int(r.text),
+                            "granularity": int(granularity)
+                        }
 
             elem.clear()
             parent = elem.getparent()
 
             if parent is not None:
                 parent.remove(elem)
+
+
+def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
+
+    followed_metrics = get_followed_metrics(db)
+
+    results = {}
+    for file in get_unparsed_files():
+        results[file] = parse_file(followed_metrics, file)
+
+    return results

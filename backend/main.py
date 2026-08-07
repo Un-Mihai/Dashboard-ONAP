@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends
-from parser import parse_file, get_followed_metrics
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_db
 from sqlalchemy.orm import Session
 
+from parser import parse_file, parse_files,  get_followed_metrics
 
 app = FastAPI()
 
@@ -24,5 +24,5 @@ def read_status(db: Session = Depends(get_db)):
     return get_followed_metrics(db)
 
 @app.post("/api/parsefile")
-def parse_data():
-    return parse_file()
+def parse_data(db: Session = Depends(get_db)):
+    return parse_files(db)
