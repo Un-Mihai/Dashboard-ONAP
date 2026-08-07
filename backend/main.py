@@ -9,18 +9,22 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 @app.get("/api/status")
-def read_status(db: Session = Depends(get_db)):
+def read_status():
+    return {"status": "ok", "message": "Backend conectat!"}
+
+@app.get("/api/followed-metrics")
+def read_followed_metrics(db: Session = Depends(get_db)):
     return get_followed_metrics(db)
 
 @app.post("/api/parsefile")
