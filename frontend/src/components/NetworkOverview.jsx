@@ -34,10 +34,11 @@ export default function NetworkOverview({ viewMode }) {
           total_traffic: 1420,
           avg_power: 450,
           stations: [
-            { id: 1, name: "gNB_Timisoara_Centru", availability: 100, traffic: 120, power: 400 },
-            { id: 2, name: "gNB_Complex_Studentesc", availability: 99.2, traffic: 450, power: 550 },
-            { id: 3, name: "gNB_Gara_de_Nord", availability: 0, traffic: 0, power: 0 },
-            { id: 4, name: "gNB_Iulius_Town", availability: 100, traffic: 850, power: 850 }
+            // Am adaugat campul "active_alarms" pentru a testa ideea Denisei
+            { id: 1, name: "gNB_Timisoara_Centru", availability: 100, traffic: 120, power: 400, active_alarms: 0 },
+            { id: 2, name: "gNB_Complex_Studentesc", availability: 99.2, traffic: 450, power: 550, active_alarms: 2 },
+            { id: 3, name: "gNB_Gara_de_Nord", availability: 0, traffic: 0, power: 0, active_alarms: 5 },
+            { id: 4, name: "gNB_Iulius_Town", availability: 100, traffic: 850, power: 850, active_alarms: 0 }
           ]
         });
         setLoading(false);
@@ -71,7 +72,7 @@ export default function NetworkOverview({ viewMode }) {
             </div>
           </div>
 
-          {/* Grid View Stații */}
+          {/* Grid View Stații cu Indicatori de Alertă (Ideea Denisei) */}
           <div className="overview-card">
             <h3>Grid View Stații (Status în Timp Real)</h3>
             <div className="stations-grid">
@@ -79,9 +80,30 @@ export default function NetworkOverview({ viewMode }) {
                 const isOk = st.availability >= 99.8;
                 const isWarning = st.availability < 99.8 && st.availability > 0;
                 const borderColor = isOk ? '#2ea043' : isWarning ? '#d29922' : '#f85149';
+                
+                // Verificam daca statia e picata SAU are alarme active
+                const hasAlerts = st.availability === 0 || st.active_alarms > 0;
 
                 return (
-                  <div key={st.id} className="station-item" style={{ border: `1px solid ${borderColor}` }}>
+                  <div key={st.id} className="station-item" style={{ border: `1px solid ${borderColor}`, position: 'relative' }}>
+                    
+                    {/* BULINA DE ALERTĂ */}
+                    {hasAlerts && (
+                      <div 
+                        title={`${st.active_alarms} alerte active!`}
+                        style={{
+                          position: 'absolute', top: '-8px', right: '-8px',
+                          backgroundColor: '#f85149', color: 'white',
+                          borderRadius: '50%', width: '22px', height: '22px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '11px', fontWeight: 'bold', border: '2px solid #0d1117',
+                          boxShadow: '0 0 8px rgba(248, 81, 73, 0.6)'
+                        }}
+                      >
+                        {st.availability === 0 ? '!' : st.active_alarms}
+                      </div>
+                    )}
+
                     <div className="station-item-title" title={st.name}>
                       {st.name}
                     </div>

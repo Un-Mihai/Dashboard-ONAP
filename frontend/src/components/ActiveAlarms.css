@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .alarm-card {
@@ -10,13 +11,17 @@
   border-radius: 8px;
   padding: 20px;
   color: #c9d1d9;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-/* Summary Cards */
 .alarms-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .kpi-value {
@@ -41,7 +46,6 @@
   color: #58a6ff;
 }
 
-/* Bară Filtre */
 .alarms-filters-bar {
   display: flex;
   gap: 20px;
@@ -72,35 +76,46 @@
   cursor: pointer;
 }
 
-/* Tabel Alerte */
 .alarms-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 16px;
   color: #c9d1d9;
+  table-layout: fixed;
+}
+
+.alarms-table th,
+.alarms-table td {
+  padding: 12px 10px;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .alarms-table th {
-  padding: 12px;
   color: #8b949e;
   font-size: 13px;
-  text-align: left;
   border-bottom: 1px solid #30363d;
   background-color: #0d1117;
 }
 
 .alarms-table td {
-  padding: 12px;
   font-size: 14px;
   border-bottom: 1px solid #21262d;
 }
 
 .severity-badge {
-  padding: 3px 8px;
+  padding: 5px 10px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: bold;
   color: #ffffff;
+  display: inline-block;
+  width: 90px;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .severity-badge.critical {
@@ -115,7 +130,12 @@
   background-color: #9e6a03;
 }
 
-/* Configurator Praguri */
+.severity-badge.acknowledged {
+  background-color: transparent;
+  color: #8b949e;
+  border: 1px solid #30363d;
+}
+
 .thresholds-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

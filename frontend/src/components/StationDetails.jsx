@@ -4,15 +4,13 @@ import {
 } from 'recharts';
 import './StationDetails.css';
 
-// Lista de stații disponibile pentru selecție
 const availableStations = [
-  { id: 'gNB-1024', name: 'gNB_Timisoara_Centru' },
-  { id: 'gNB-1025', name: 'gNB_Complex_Studentesc' },
-  { id: 'gNB-1026', name: 'gNB_Iulius_Town' },
-  { id: 'gNB-1027', name: 'gNB_Gara_de_Nord' },
+  { id: 'gNB-1024', name: 'gNB_Timisoara_Centru', power: 350, voltage: 48.2, kwh: 0.087, eff: 166.6, dlGb: 12.4, ulGb: 2.1, dlMbps: 110, ulMbps: 18, prb: 85, peakPrb: 98 },
+  { id: 'gNB-1025', name: 'gNB_Complex_Studentesc', power: 550, voltage: 47.9, kwh: 0.120, eff: 120.0, dlGb: 18.2, ulGb: 3.5, dlMbps: 140, ulMbps: 22, prb: 82, peakPrb: 96 },
+  { id: 'gNB-1026', name: 'gNB_Iulius_Town', power: 850, voltage: 48.2, kwh: 0.210, eff: 95.0, dlGb: 25.0, ulGb: 5.2, dlMbps: 165, ulMbps: 32, prb: 88, peakPrb: 100 },
+  { id: 'gNB-1027', name: 'gNB_Gara_de_Nord', power: 0, voltage: 0, kwh: 0, eff: 0, dlGb: 0, ulGb: 0, dlMbps: 0, ulMbps: 0, prb: 0, peakPrb: 0 },
 ];
 
-// Date simulate de granularitate 15 min (PT900S)
 const stationHistoryData = [
   { time: '12:00', prb: 45, prbPeak: 70, power: 340 },
   { time: '12:15', prb: 52, prbPeak: 80, power: 355 },
@@ -24,86 +22,162 @@ const stationHistoryData = [
 
 export default function StationDetails() {
   const [selectedGnb, setSelectedGnb] = useState('gNB-1024');
+  const [compareGnb, setCompareGnb] = useState('gNB-1026');
+  const [isComparing, setIsComparing] = useState(false);
+
+  const currentSt = availableStations.find(st => st.id === selectedGnb) || availableStations[0];
+  const compareSt = availableStations.find(st => st.id === compareGnb) || availableStations[2];
+
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   return (
     <div className="station-details-container">
-      
-      {/* HEADER STAȚIE & SELECTOR */}
       <div className="station-card station-header">
-        <div className="station-select-group">
-          <label htmlFor="gnb-select" style={{ color: '#8b949e', fontWeight: 'bold' }}>Alege Stația:</label>
-          <select 
-            id="gnb-select"
-            className="station-select"
-            value={selectedGnb}
-            onChange={(e) => setSelectedGnb(e.target.value)}
-          >
-            {availableStations.map((st) => (
-              <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="station-select-group">
+            <label htmlFor="gnb-select" style={{ color: '#8b949e', fontWeight: 'bold' }}>Stație Principală:</label>
+            <select 
+              id="gnb-select"
+              className="station-select"
+              value={selectedGnb}
+              onChange={(e) => setSelectedGnb(e.target.value)}
+            >
+              {availableStations.map((st) => (
+                <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {isComparing && (
+            <div className="station-select-group">
+              <label htmlFor="gnb-compare-select" style={{ color: '#d29922', fontWeight: 'bold' }}>Compară cu:</label>
+              <select 
+                id="gnb-compare-select"
+                className="station-select"
+                value={compareGnb}
+                onChange={(e) => setCompareGnb(e.target.value)}
+              >
+                {availableStations.filter(st => st.id !== selectedGnb).map((st) => (
+                  <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        <div className="station-status-badges">
-          <span className="badge online">ONLINE</span>
-          <span className="badge info">Availability: 100%</span>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setIsComparing(!isComparing)}
+            style={{
+              backgroundColor: isComparing ? '#d29922' : '#21262d',
+              color: isComparing ? '#0d1117' : '#c9d1d9',
+              border: '1px solid #30363d', padding: '8px 14px', borderRadius: '6px',
+              cursor: 'pointer', fontWeight: 'bold', fontSize: '13px'
+            }}
+          >
+            {isComparing ? 'Închide Comparația' : 'Compară Stații'}
+          </button>
+
+          <button 
+            onClick={handleExportPDF}
+            style={{
+              backgroundColor: '#238636', color: 'white', border: 'none',
+              padding: '8px 14px', borderRadius: '6px', cursor: 'pointer',
+              fontWeight: 'bold', fontSize: '13px'
+            }}
+          >
+            Exportă Raport PDF
+          </button>
+
+          <div className="station-status-badges">
+            <span className={`badge ${currentSt.power > 0 ? 'online' : 'down'}`}>
+              {currentSt.power > 0 ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* PANOURI ENERGIE & TRAFIC (Cei 10 contori) */}
       <div className="station-panels-grid">
-        
-        {/* PANOU ENERGIE */}
         <div className="station-card">
-          <h3>Panou Energie & Tensiune</h3>
+          <h3 style={{ borderBottom: '1px solid #30363d', paddingBottom: '10px', marginTop: 0 }}>
+            Panou Energie & Tensiune {isComparing && `(${currentSt.id} vs ${compareSt.id})`}
+          </h3>
           <div className="metrics-list">
             <div className="metric-item">
               <span className="metric-label">Putere Medie (RU_AVG_PWR_USAGE)</span>
-              <span className="metric-value">350 W</span>
+              <span className="metric-value" style={{ color: '#d29922' }}>
+                {currentSt.power} W {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.power} W</span>}
+              </span>
             </div>
             <div className="metric-item">
-              <span className="metric-label">Tensiune Intrares (Voltage)</span>
-              <span className="metric-value">48.2 V</span>
+              <span className="metric-label">Tensiune Intrare (Voltage)</span>
+              <span className="metric-value" style={{ color: '#d29922' }}>
+                {currentSt.voltage} V {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.voltage} V</span>}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Consum 15 min (kWh)</span>
-              <span className="metric-value">0.087 kWh</span>
+              <span className="metric-value" style={{ color: '#d29922' }}>
+                {currentSt.kwh} kWh {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.kwh} kWh</span>}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Eficiență Energetică</span>
-              <span className="metric-value" style={{ color: '#3fb950' }}>166.6 GB/kWh</span>
+              <span className="metric-value" style={{ color: '#3fb950' }}>
+                {currentSt.eff} GB/kWh {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.eff} GB/kWh</span>}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* PANOU TRAFIC & VITEZĂ */}
         <div className="station-card">
-          <h3>Panou Trafic & Viteze</h3>
+          <h3 style={{ borderBottom: '1px solid #30363d', paddingBottom: '10px', marginTop: 0 }}>
+            Panou Trafic & Viteze {isComparing && `(${currentSt.id} vs ${compareSt.id})`}
+          </h3>
           <div className="metrics-list">
             <div className="metric-item">
               <span className="metric-label">Volum Downlink (DL)</span>
-              <span className="metric-value">12.4 GB</span>
+              <span className="metric-value">
+                {currentSt.dlGb} GB {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.dlGb} GB</span>}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Volum Uplink (UL)</span>
-              <span className="metric-value">2.1 GB</span>
+              <span className="metric-value">
+                {currentSt.ulGb} GB {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.ulGb} GB</span>}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Throughput Downlink</span>
-              <span className="metric-value">110 Mbps</span>
+              <span className="metric-value">
+                {currentSt.dlMbps} Mbps {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.dlMbps} Mbps</span>}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Throughput Uplink</span>
-              <span className="metric-value">18 Mbps</span>
+              <span className="metric-value">
+                {currentSt.ulMbps} Mbps {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.ulMbps} Mbps</span>}
+              </span>
+            </div>
+            <div className="metric-item">
+              <span className="metric-label">Ocupare PRB DL (Curent)</span>
+              <span className="metric-value" style={{ color: '#f85149' }}>
+                {currentSt.prb}% {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.prb}%</span>}
+              </span>
+            </div>
+            <div className="metric-item">
+              <span className="metric-label">Peak PRB (Max)</span>
+              <span className="metric-value" style={{ color: '#f85149' }}>
+                {currentSt.peakPrb}% {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.peakPrb}%</span>}
+              </span>
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* GRAFICE EVOLUȚIE (15-min PT900S) */}
       <div className="station-charts-grid">
-        
         <div className="station-card">
           <h3>Ocupare PRB DL (%) - Medie vs Peak</h3>
           <div className="chart-box">
@@ -134,9 +208,7 @@ export default function StationDetails() {
             </ResponsiveContainer>
           </div>
         </div>
-
       </div>
-
     </div>
   );
 }

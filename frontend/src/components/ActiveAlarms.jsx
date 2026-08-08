@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import './ActiveAlarms.css';
 
-// Lista inițială de alerte simulate conform regilor din cerințe
+// Lista inițială de alerte (acum le punem intr-un state mai jos pentru a le putea modifica)
 const initialAlarms = [
-  { id: 1, severity: 'CRITICAL', station: 'gNB_Gara_de_Nord', category: 'Disponibilitate', rule: 'Cell Availability = 0%', value: '0%', time: '14:15:00' },
-  { id: 2, severity: 'MAJOR', station: 'gNB_Iulius_Town', category: 'Energie', rule: 'High Power Usage', value: '850 W', time: '14:00:00' },
-  { id: 3, severity: 'WARNING', station: 'gNB_Complex_Studentesc', category: 'Trafic', rule: 'High PRB Utilization (DL)', value: '88.5%', time: '13:45:00' },
-  { id: 4, severity: 'WARNING', station: 'gNB_Timisoara_Centru', category: 'Energie', rule: 'Low Energy Efficiency', value: '0.8 GB/kWh', time: '13:30:00' },
+  { id: 1, severity: 'CRITICAL', station: 'gNB_Gara_de_Nord', category: 'Disponibilitate', rule: 'Cell Availability = 0%', value: '0%', time: '14:15:00', status: 'NEW' },
+  { id: 2, severity: 'MAJOR', station: 'gNB_Iulius_Town', category: 'Energie', rule: 'High Power Usage', value: '850 W', time: '14:00:00', status: 'NEW' },
+  { id: 3, severity: 'WARNING', station: 'gNB_Complex_Studentesc', category: 'Trafic', rule: 'High PRB Utilization (DL)', value: '88.5%', time: '13:45:00', status: 'NEW' },
+  { id: 4, severity: 'WARNING', station: 'gNB_Timisoara_Centru', category: 'Energie', rule: 'Low Energy Efficiency', value: '0.8 GB/kWh', time: '13:30:00', status: 'NEW' },
 ];
 
 export default function ActiveAlarms() {
+  // 1. Folosim STATE pentru alarme ca sa le putem modifica la click!
+  const [alarms, setAlarms] = useState(initialAlarms);
+  
   const [categoryFilter, setCategoryFilter] = useState('Toate');
   const [severityFilter, setSeverityFilter] = useState('Toate');
 
@@ -25,13 +28,25 @@ export default function ActiveAlarms() {
     setThresholds((prev) => ({ ...prev, [key]: Number(val) }));
   };
 
-  const filteredAlarms = initialAlarms.filter((alarm) => {
+  // 2. Funcția magică a Denisei: Acknowledge Alarm
+  const handleAcknowledge = (alarmId) => {
+    setAlarms(prevAlarms => 
+      prevAlarms.map(alarm => 
+        alarm.id === alarmId 
+          ? { ...alarm, status: 'ACKNOWLEDGED', severity: 'ACKNOWLEDGED' } // Schimbam severitatea ca sa aplice alt CSS (gri)
+          : alarm
+      )
+    );
+  };
+
+  // Folosim starea 'alarms' (cea care se poate modifica), nu pe 'initialAlarms' direct
+  const filteredAlarms = alarms.filter((alarm) => {
     const matchCategory = categoryFilter === 'Toate' || alarm.category === categoryFilter;
-    const matchSeverity = severityFilter === 'Toate' || alarm.severity === severityFilter;
+    const matchSeverity = severityFilter === 'Toate' || alarm.severity === severityFilter || (severityFilter === 'Toate' && alarm.status === 'ACKNOWLEDGED');
     return matchCategory && matchSeverity;
   });
 
-  const countBySeverity = (sev) => initialAlarms.filter((a) => a.severity === sev).length;
+  const countBySeverity = (sev) => alarms.filter((a) => a.severity === sev).length;
 
   return (
     <div className="alarms-container">
@@ -40,7 +55,7 @@ export default function ActiveAlarms() {
       <div className="alarms-summary-grid">
         <div className="alarm-card">
           <h4>Total Alerte Active</h4>
-          <p className="kpi-value info">{initialAlarms.length}</p>
+          <p className="kpi-value info">{alarms.length}</p>
         </div>
         <div className="alarm-card">
           <h4>Critical</h4>
@@ -93,13 +108,15 @@ export default function ActiveAlarms() {
               <th>Regulă Depășită</th>
               <th>Valoare Actuală</th>
               <th>Timestamp</th>
+              <th>Acțiune</th> {/* Adaugat Coloana noua */}
             </tr>
           </thead>
           <tbody>
             {filteredAlarms.length > 0 ? (
               filteredAlarms.map((alarm) => (
-                <tr key={alarm.id}>
+                <tr key={alarm.id} style={{ opacity: alarm.status === 'ACKNOWLEDGED' ? 0.6 : 1 }}> {/* Facem randul putin transparent daca e preluat */}
                   <td>
+                    {/* Badge-ul ia clasa in functie de severity. Daca e ACKNOWLEDGED, o sa aiba o clasa de gri in css */}
                     <span className={`severity-badge ${alarm.severity.toLowerCase()}`}>
                       {alarm.severity}
                     </span>
@@ -109,12 +126,27 @@ export default function ActiveAlarms() {
                   <td>{alarm.rule}</td>
                   <td>{alarm.value}</td>
                   <td>{alarm.time}</td>
+                  <td>
+                    {alarm.status === 'NEW' ? (
+                      <button 
+                        onClick={() => handleAcknowledge(alarm.id)}
+                        style={{
+                          backgroundColor: '#1f6beb', color: 'white', border: 'none', 
+                          padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
+                        }}
+                      >
+                        Acknowledge
+                      </button>
+                    ) : (
+                      <span style={{ color: '#8b949e', fontSize: '12px', fontStyle: 'italic' }}>Preluat</span>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center', color: '#8b949e', padding: '20px' }}>
-                  Nicio alertă găsiți pentru filtrele selectate.
+                <td colSpan="7" style={{ textAlign: 'center', color: '#8b949e', padding: '20px' }}>
+                  Nicio alertă găsită pentru filtrele selectate.
                 </td>
               </tr>
             )}
