@@ -29,4 +29,4 @@ def read_followed_metrics(db: Session = Depends(get_db)):
 
 @app.post("/api/parsefile")
 def parse_data(db: Session = Depends(get_db)):
-    return parse_files(db)
+    parse_files(db)
