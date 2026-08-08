@@ -1,0 +1,111 @@
+.overview-container {
+  display: grid;
+  gap: 20px;
+}
+
+.overview-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  color: #c9d1d9;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #58a6ff;
+  margin: 10px 0 0 0;
+}
+
+.kpi-value.green {
+  color: #3fb950;
+}
+
+/* Grid View Stații */
+.stations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.station-item {
+  background-color: #0d1117;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+  min-width: 0;
+}
+
+.station-item-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #f0f6fc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.station-item-sub {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Grafic */
+.chart-wrapper {
+  height: 300px;
+  margin-top: 20px;
+}
+
+/* Tabel */
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  color: #c9d1d9;
+}
+
+.overview-table th {
+  padding: 12px;
+  color: #8b949e;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+.overview-table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #21262d;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.status-badge.online {
+  background-color: #238636;
+}
+
+.status-badge.down {
+  background-color: #da3633;
+}
+
+.status-loading {
+  color: #8b949e;
+}
+
+.status-error {
+  color: #f85149;
+}

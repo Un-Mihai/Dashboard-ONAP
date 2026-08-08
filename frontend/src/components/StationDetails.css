@@ -1,0 +1,105 @@
+.station-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.station-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  color: #c9d1d9;
+}
+
+/* Header & Selector */
+.station-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.station-select-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.station-select {
+  background-color: #0d1117;
+  color: #f0f6fc;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+.station-status-badges {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.badge.online {
+  background-color: #238636;
+  color: #fff;
+}
+
+.badge.info {
+  background-color: #1f6beb;
+  color: #fff;
+}
+
+/* Panouri Energie și Trafic */
+.station-panels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #21262d;
+  font-size: 14px;
+}
+
+.metric-label {
+  color: #8b949e;
+}
+
+.metric-value {
+  font-weight: bold;
+  color: #58a6ff;
+}
+
+/* Grafice */
+.station-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.chart-box {
+  height: 250px;
+  margin-top: 15px;
+}

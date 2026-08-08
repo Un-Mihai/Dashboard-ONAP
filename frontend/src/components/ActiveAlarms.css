@@ -1,0 +1,160 @@
+.alarms-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.alarm-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  color: #c9d1d9;
+}
+
+/* Summary Cards */
+.alarms-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 10px 0 0 0;
+}
+
+.kpi-value.critical {
+  color: #f85149;
+}
+
+.kpi-value.major {
+  color: #d29922;
+}
+
+.kpi-value.warning {
+  color: #e3b341;
+}
+
+.kpi-value.info {
+  color: #58a6ff;
+}
+
+/* Bară Filtre */
+.alarms-filters-bar {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  color: #8b949e;
+  font-weight: bold;
+}
+
+.alarm-select {
+  background-color: #0d1117;
+  color: #f0f6fc;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Tabel Alerte */
+.alarms-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  color: #c9d1d9;
+}
+
+.alarms-table th {
+  padding: 12px;
+  color: #8b949e;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+.alarms-table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #21262d;
+}
+
+.severity-badge {
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.severity-badge.critical {
+  background-color: #da3633;
+}
+
+.severity-badge.major {
+  background-color: #bb8009;
+}
+
+.severity-badge.warning {
+  background-color: #9e6a03;
+}
+
+/* Configurator Praguri */
+.thresholds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.threshold-item {
+  background-color: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 6px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.threshold-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.threshold-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.threshold-slider {
+  flex: 1;
+  accent-color: #58a6ff;
+  cursor: pointer;
+}
+
+.threshold-value {
+  font-weight: bold;
+  color: #58a6ff;
+  min-width: 50px;
+  text-align: right;
+}

@@ -1,0 +1,79 @@
+.energy-container {
+  display: grid;
+  gap: 20px;
+}
+
+.energy-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  color: #c9d1d9;
+}
+
+/* KPI Cards */
+.energy-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: #58a6ff;
+  margin: 10px 0 0 0;
+}
+
+.kpi-value.warning {
+  color: #d29922;
+}
+
+.kpi-value.success {
+  color: #3fb950;
+}
+
+/* Container Grafice */
+.chart-container-280 {
+  height: 280px;
+  margin-top: 20px;
+}
+
+/* Stiluri Tabel Monitorizare RFM */
+.energy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  color: #c9d1d9;
+}
+
+.energy-table th {
+  padding: 12px;
+  color: #8b949e;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+.energy-table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #21262d;
+}
+
+.efficiency-text {
+  font-weight: bold;
+}
+
+.efficiency-text.critical {
+  color: #f85149;
+}
+
+.efficiency-text.medium {
+  color: #d29922;
+}
+
+.efficiency-text.good {
+  color: #3fb950;
+}

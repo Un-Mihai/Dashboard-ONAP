@@ -2,6 +2,7 @@ import React from 'react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import './EnergySustainability.css';
 
 // Date de test pentru consumul top stațiilor (Bar Chart)
 const topConsumersData = [
@@ -32,40 +33,41 @@ const stationEnergyData = [
 ];
 
 export default function EnergySustainability({ viewMode }) {
-  const cardStyle = { backgroundColor: '#161b22', border: '1px solid #30363d', borderRadius: '8px', padding: '20px', color: '#c9d1d9' };
-  const kpiValue = { fontSize: '28px', fontWeight: 'bold', color: '#58a6ff', margin: '10px 0 0 0' };
-  const thStyle = { padding: '12px', color: '#8b949e', fontSize: '13px', textAlign: 'left' };
-  const tdStyle = { padding: '12px', fontSize: '14px' };
+  const getEfficiencyClass = (efficiency) => {
+    if (efficiency < 1.0) return 'critical';
+    if (efficiency < 2.5) return 'medium';
+    return 'good';
+  };
 
   return (
     <>
       {viewMode === 'grafic' ? (
-        <div style={{ display: 'grid', gap: '20px' }}>
+        <div className="energy-container">
           
           {/* 1. METRICI ENERGIE & EFICIENȚĂ (KPI Cards) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-            <div style={cardStyle}>
+          <div className="energy-kpi-grid">
+            <div className="energy-card">
               <h4>Total Energy (kWh)</h4>
-              <p style={kpiValue}>142.5 kWh</p>
+              <p className="kpi-value">142.5 kWh</p>
             </div>
-            <div style={cardStyle}>
+            <div className="energy-card">
               <h4>Power Mediu (W)</h4>
-              <p style={{ ...kpiValue, color: '#d29922' }}>450 W</p>
+              <p className="kpi-value warning">450 W</p>
             </div>
-            <div style={cardStyle}>
+            <div className="energy-card">
               <h4>Voltage Mediu (V)</h4>
-              <p style={kpiValue}>48.2 V</p>
+              <p className="kpi-value">48.2 V</p>
             </div>
-            <div style={cardStyle}>
+            <div className="energy-card">
               <h4>Eficiență (GB / kWh)</h4>
-              <p style={{ ...kpiValue, color: '#3fb950' }}>3.2 GB/kWh</p>
+              <p className="kpi-value success">3.2 GB/kWh</p>
             </div>
           </div>
 
           {/* 2. GRAFIC 1: Top Consumatori de Energie (Bar Chart) */}
-          <div style={cardStyle}>
+          <div className="energy-card">
             <h3>Top Stații după Consumul Energetic (Watts)</h3>
-            <div style={{ height: '280px', marginTop: '20px' }}>
+            <div className="chart-container-280">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topConsumersData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
@@ -79,9 +81,9 @@ export default function EnergySustainability({ viewMode }) {
           </div>
 
           {/* 3. GRAFIC 2: Eficiența Energetică în Timp (Line Chart) */}
-          <div style={cardStyle}>
+          <div className="energy-card">
             <h3>Eficiența Energetică în Timp (GB per kWh)</h3>
-            <div style={{ height: '280px', marginTop: '20px' }}>
+            <div className="chart-container-280">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={efficiencyTrendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
@@ -98,30 +100,27 @@ export default function EnergySustainability({ viewMode }) {
         </div>
       ) : (
         /* VERSIUNEA TABELARĂ: RFM Energy Monitoring */
-        <div style={cardStyle}>
+        <div className="energy-card">
           <h3>Monitorizare RFM Energie per Stație</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '16px', color: '#c9d1d9' }}>
+          <table className="energy-table">
             <thead>
-              <tr style={{ borderBottom: '1px solid #30363d', backgroundColor: '#0d1117' }}>
-                <th style={thStyle}>Stație ID</th>
-                <th style={thStyle}>Tensiune (V)</th>
-                <th style={thStyle}>Consum Mediu (W)</th>
-                <th style={thStyle}>Trafic (GB)</th>
-                <th style={thStyle}>Eficiență (GB/kWh)</th>
+              <tr>
+                <th>Stație ID</th>
+                <th>Tensiune (V)</th>
+                <th>Consum Mediu (W)</th>
+                <th>Trafic (GB)</th>
+                <th>Eficiență (GB/kWh)</th>
               </tr>
             </thead>
             <tbody>
               {stationEnergyData.map((st) => (
-                <tr key={st.id} style={{ borderBottom: '1px solid #21262d' }}>
-                  <td style={tdStyle}>{st.name}</td>
-                  <td style={tdStyle}>{st.voltage} V</td>
-                  <td style={tdStyle}>{st.power} W</td>
-                  <td style={tdStyle}>{st.traffic} GB</td>
-                  <td style={tdStyle}>
-                    <span style={{
-                      fontWeight: 'bold',
-                      color: st.efficiency < 1.0 ? '#f85149' : st.efficiency < 2.5 ? '#d29922' : '#3fb950'
-                    }}>
+                <tr key={st.id}>
+                  <td>{st.name}</td>
+                  <td>{st.voltage} V</td>
+                  <td>{st.power} W</td>
+                  <td>{st.traffic} GB</td>
+                  <td>
+                    <span className={`efficiency-text ${getEfficiencyClass(st.efficiency)}`}>
                       {st.efficiency} GB/kWh
                     </span>
                   </td>
