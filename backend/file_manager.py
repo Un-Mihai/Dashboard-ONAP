@@ -5,27 +5,28 @@ script_path = Path(__file__).parent
 
 folder_path = Path(os.getenv('FILES_DIRECTORY'))
 
-def get_unparsed_files():
-    unparsed_files = []
+def get_files(file_type: str = 'ALL') -> list[Path]:
 
-    for file in folder_path.glob('*.xml'):
+    if file_type == 'PARSED':
+        return [file.resolve for file in folder_path.glob('*_PARSED.xml')]
 
-        if file.name.endswith('_PARSED.xml'):
-            continue
+    all_xml_files = folder_path.glob('*.xml')
 
-        unparsed_files.append(file.resolve())
+    if file_type == 'UNPARSED':
+        return [file.resolve() for file in all_xml_files if not file.name.endswith('_PARSED.xml')]
 
-    return unparsed_files
+    return [file.resolve() for file in all_xml_files] 
 
-def marked_parsed(file_name: str):
-    old_path = os.path.join(folder_path, file_name)
+def mark_file(file_path: Path, file_type: str) -> None:
 
-    name, extension = os.path.splitext(file_name)
+    if file_type == 'PARSED':
+        new_name = f"{file_path.stem}_PARSED{file_path.suffix}"
+    else:
+        new_name = f"{file_path.stem.replace('_PARSED', '')}{file_path.suffix}"
 
-    new_file_name = f"{name}_PARSED{extension}"
-    new_path = os.path.join(folder_path, new_file_name)
+    new_path = file_path.with_name(new_name)
+    file_path.rename(new_path)
 
-    os.rename(old_path, new_path)
 
 
 

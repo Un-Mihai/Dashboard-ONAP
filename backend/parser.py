@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from collections.abc import Generator
 
-from file_manager import get_unparsed_files, marked_parsed
+from file_manager import get_files, mark_file
 from crud import get_followed_metrics, save_batch
 
 
@@ -32,16 +32,17 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
             break
 
     metrics = {}
+    accumulator = {}
 
     for event, elem in file_data:
 
         if event == 'start' and elem.tag == measEntity_tag:
-            localDn_str = elem.get('localDn')
-            node_name = localDn_str.split('=')[1]
+            node_name = elem.get('userLabel')
             continue
         
         if event == 'start' and elem.tag == measInfo_tag:
             metrics.clear()
+            accumulator.clear()
             continue
 
         if event == 'end' and elem.tag == granPeriod_tag:
@@ -49,9 +50,10 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
             granularity = re.search(r'\d+', duration_str).group()
             continue
 
-        if event == 'end' and elem.tag == measType_tag and elem.text in followed_metrics:
-            id = elem.get('p')
-            metrics[id] = elem.text
+        if event == 'end' and elem.tag == measType_tag:
+            if elem.text.strip() in followed_metrics:
+                id = elem.get('p')
+                metrics[id] = elem.text
 
             elem.clear()
             parent = elem.getparent()
@@ -73,20 +75,35 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
                     id = r.get('p')
                     metric_name = metrics.get(id)
 
+                    # if metric_name in ["VS.NCUPNRG.DL_PRB_UTIL_RATIO_DNOM", "VS.NCUPNRG.UL_PRB_UTIL_RATIO_DNOM"]:
+                    #         print(f"DEBUG {metric_name} | Obiect Brut: {measObjLdn_string} | Valoare: {r.text}")
+
                     if metric_name is not None:
-                        yield {
-                            "node_name": node_name,
-                            "object_type": object_type,
-                            "object_id": int(cell_nr),
-                            "measurement_type": metric_name,
-                            "measurement_value": int(r.text),
-                            "begin_time": datetime.fromisoformat(begin_time),
-                            "granularity": int(granularity)
-                        }
+
+                        unique_key = (object_type, int(cell_nr), metric_name)
+
+                        accumulator[unique_key] = int(r.text)
 
             elem.clear()
             parent = elem.getparent()
 
+            if parent is not None:
+                parent.remove(elem)
+
+        if event == 'end' and elem.tag == measInfo_tag:
+            for (obj_type, obj_id, m_name), value in accumulator.items():
+                    yield {
+                        "node_name": node_name,
+                        "object_type": obj_type,
+                        "object_id": obj_id,
+                        "measurement_type": m_name,
+                        "measurement_value": value,
+                        "begin_time": datetime.fromisoformat(begin_time),
+                        "granularity": granularity
+                    }
+                    
+            elem.clear()
+            parent = elem.getparent()
             if parent is not None:
                 parent.remove(elem)
 
@@ -97,7 +114,7 @@ def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
 
     followed_metrics = get_followed_metrics(db)
 
-    for file in get_unparsed_files():
+    for file in get_files('UNPARSED'):
         batch = []
 
         for telemetry_data in parse_file(followed_metrics, file):
@@ -109,4 +126,4 @@ def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
         if batch:
             save_batch(db, batch)
 
-        marked_parsed(file)
+        mark_file(file, 'PARSED')
