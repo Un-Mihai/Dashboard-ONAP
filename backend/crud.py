@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import text, select, insert, func, cast, Date, literal_column
 
@@ -19,12 +20,38 @@ def get_node_names(db: Session) -> list[str]:
 
     return [row._mapping.get("NODE_NAME") for row in results]
 
+def get_last_update(db: Session, end_time: datetime = None):
+    if end_time is None:
+        end_time = datetime.now()
+
+    query = text("SELECT MAX(END_TIME) FROM ONAP_DATA")
+    result = db.execute(query).scalar()
+
+    return result
+
 def save_batch(db:Session, batch) -> None:
 
     db.execute(insert(TelemetryData), batch)
     db.commit()
     
     batch.clear()
+
+def get_rounded_time(bucket_size: str, time: datetime) -> datetime:
+
+    if not time:
+        return datetime.now()
+
+    if bucket_size == '1h':
+        return time.replace(minute=0, second=0, microsecond=0)
+
+    if bucket_size in ['24h', '1d']:
+        return time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if bucket_size == '15m':
+        minute_rounded = (time.minute // 15) * 15
+        return time.replace(minute=minute_rounded, second=0, microsecond=0)
+
+    return time
 
 def build_time_bucket_sql_expr(bucket_size: str):
 
@@ -50,13 +77,12 @@ def build_telemetry_query(db: Session, node_name: str, metric_components: list[s
             TelemetryData.measurement_type,
             func.sum(TelemetryData.measurement_value).label('sum_val'),
             func.avg(TelemetryData.measurement_value).label('avg_val'),
-            func.max(TelemetryData.measurement_value).label('max_val'),
-            func.sum(TelemetryData.granularity).label('granularity')
+            func.max(TelemetryData.measurement_value).label('max_val')
         )
         .where(
             TelemetryData.node_name == node_name,
             TelemetryData.begin_time >= start_time,
-            TelemetryData.begin_time <= end_time,
+            TelemetryData.begin_time < end_time,
             TelemetryData.measurement_type.in_(metric_components)
         )
         .group_by(
@@ -70,7 +96,7 @@ def build_telemetry_query(db: Session, node_name: str, metric_components: list[s
 
     return query
 
-def procces_query(db:Session, metric_data: dict[str: str], query):
+def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, query):
 
     sql_results = db.execute(query).mappings().all()
 
@@ -95,10 +121,13 @@ def procces_query(db:Session, metric_data: dict[str: str], query):
     print(dataframe.columns)
 
     dataframe_pivot = dataframe.pivot(index='bucket_time', columns='measurement_type', values=value_column)
+    dataframe_final = dataframe_pivot.copy()
 
-    dataframe_granularity = dataframe.groupby('bucket_time')['granularity'].first()
-    dataframe_final = dataframe_pivot.join(dataframe_granularity)
-    dataframe_final.columns = dataframe_final.columns.str.replace('.', '_').fillna(0)
+    granularity_map = {'15m': 900, '15min': 900, '1h': 3600, '24h': 86400, '1d': 86400}
+    dataframe_final['granularity'] = granularity_map.get(bucket_size.lower(), 900)
+
+    dataframe_final.columns = dataframe_final.columns.str.replace('.', '_')
+    dataframe_final = dataframe_final.fillna(0)
     print(dataframe_final.columns)    
     print(dataframe_final.head(3))
 
@@ -111,10 +140,20 @@ def calculate(db: Session, node_name: str, metric: str, bucket_size: str, start_
 
     metric_data = metrics.get(metric)
 
-    query = build_telemetry_query(db, node_name, metric_data.get('Components'), bucket_size, start_time, end_time)
+    print(start_time)
+    last_update = get_last_update(db, end_time)
+    safe_end_time = get_rounded_time(bucket_size, last_update)
+    safe_start_time = get_rounded_time(bucket_size, start_time)
 
-    results = procces_query(db, metric_data, query)
+    query = build_telemetry_query(db, node_name, metric_data.get('Components'), bucket_size, safe_start_time, safe_end_time)
 
+    print(safe_end_time)
+    print(safe_start_time)
+    results = procces_query(db, metric_data, bucket_size, query)
+
+    if isinstance(results, dict) and "message" in results:
+        return results
+    
     results.name = metric
     results_export = results.reset_index()
 

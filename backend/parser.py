@@ -1,7 +1,7 @@
 import re
 import os
 from lxml import etree
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from collections.abc import Generator
 
@@ -25,7 +25,7 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
 
     for event, elem in file_data:
         if event == 'start' and elem.tag == measData_tag:
-            begin_time = elem.get('beginTime')
+            begin_time = datetime.fromisoformat(elem.get('beginTime'))
             break
 
         if event == 'start' and elem.tag == measEntity_tag:
@@ -47,7 +47,7 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
 
         if event == 'end' and elem.tag == granPeriod_tag:
             duration_str = elem.get('duration')
-            granularity = re.search(r'\d+', duration_str).group()
+            granularity = int(re.search(r'\d+', duration_str).group())
             continue
 
         if event == 'end' and elem.tag == measType_tag:
@@ -98,7 +98,8 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
                         "object_id": obj_id,
                         "measurement_type": m_name,
                         "measurement_value": value,
-                        "begin_time": datetime.fromisoformat(begin_time),
+                        "begin_time": begin_time,
+                        "end_time": begin_time + timedelta(seconds=granularity),
                         "granularity": granularity
                     }
                     

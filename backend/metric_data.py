@@ -52,8 +52,8 @@ metrics = {
     },
     "Cell_Availability": {
         "Type": 'COMPOSITE',
-        "Components": ['VS.NCAV.SAMPLES_CELL_AVAIL', 'VS.NCAV.DENOM_CELL_AVAIL'],
-        "Formula": 'VS_NCAV_SAMPLES_CELL_AVAIL / VS_NCAV_DENOM_CELL_AVAIL * 100',
+        "Components": ['VS.NCAV.SAMPLES_CELL_AVAIL', 'VS.NCAV.DENOM_CELL_AVAIL', 'VS.NCAV.NR_CELL_PLAN_UNAVAIL_SAMPLES'],
+        "Formula": 'VS_NCAV_SAMPLES_CELL_AVAIL / (VS_NCAV_DENOM_CELL_AVAIL - VS_NCAV_NR_CELL_PLAN_UNAVAIL_SAMPLES) * 100',
         "Aggregation": 'SUM',
         "Units": '%'
     },

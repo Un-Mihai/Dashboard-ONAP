@@ -15,6 +15,7 @@ class TelemetryData(Base):
     measurement_type: Mapped[str] = mapped_column("MEASUREMENT_TYPE", String(100), nullable=False)
     measurement_value: Mapped[int] = mapped_column("MEASUREMENT_VALUE", BigInteger, nullable=False)
     begin_time: Mapped[datetime] = mapped_column("BEGIN_TIME", DateTime, nullable=False)
+    end_time: Mapped[datetime] = mapped_column("END_TIME", DateTime, nullable=False)
     granularity: Mapped[int] = mapped_column("GRANULARITY", Integer, nullable=False)
 
 class Metrics(Base):
