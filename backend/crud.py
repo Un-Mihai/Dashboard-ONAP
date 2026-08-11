@@ -106,7 +106,6 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
         }
 
     dataframe = pd.DataFrame(sql_results)
-    print("Indicatori unici adusi din SQL:", dataframe['measurement_type'].unique())
 
     metric_formula = metric_data.get('Formula')
     metric_aggregation = metric_data.get('Aggregation')
@@ -118,8 +117,6 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
     else:
         value_column = 'max_val'
 
-    print(dataframe.columns)
-
     dataframe_pivot = dataframe.pivot(index='bucket_time', columns='measurement_type', values=value_column)
     dataframe_final = dataframe_pivot.copy()
 
@@ -128,8 +125,6 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
 
     dataframe_final.columns = dataframe_final.columns.str.replace('.', '_')
     dataframe_final = dataframe_final.fillna(0)
-    print(dataframe_final.columns)    
-    print(dataframe_final.head(3))
 
     results = dataframe_final.eval(metric_formula)
     results = results.replace([np.inf, -np.inf, np.nan], 0)
@@ -140,15 +135,12 @@ def calculate(db: Session, node_name: str, metric: str, bucket_size: str, start_
 
     metric_data = metrics.get(metric)
 
-    print(start_time)
     last_update = get_last_update(db, end_time)
     safe_end_time = get_rounded_time(bucket_size, last_update)
     safe_start_time = get_rounded_time(bucket_size, start_time)
 
     query = build_telemetry_query(db, node_name, metric_data.get('Components'), bucket_size, safe_start_time, safe_end_time)
 
-    print(safe_end_time)
-    print(safe_start_time)
     results = procces_query(db, metric_data, bucket_size, query)
 
     if isinstance(results, dict) and "message" in results:

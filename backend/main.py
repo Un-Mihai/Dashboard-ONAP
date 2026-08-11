@@ -4,10 +4,9 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 
 from database import get_db
-from parser import parse_file, parse_files,  get_followed_metrics
-from file_manager import get_files
+from parser import parse_files
 from teste import mark_all_files
-from crud import build_telemetry_query, procces_query, calculate, get_node_names
+from crud import calculate, get_node_names
 
 app = FastAPI()
 
@@ -37,7 +36,7 @@ def parse_data(db: Session = Depends(get_db)):
     parse_files(db)
 
 @app.get("/api/data")
-def get_data(node_name: str, metric: str, bucket_size: str, db: Session = Depends(get_db)):
+def get_data(node_name: str, metric: str, bucket_size: str,db: Session = Depends(get_db)):
     tz_ro = timezone(timedelta(hours=3))
     start_time = datetime(2026, 8, 2, 0, 0, 0, tzinfo=tz_ro)
     end_time = datetime(2026, 8, 4, 0, 0, 0, tzinfo=tz_ro)

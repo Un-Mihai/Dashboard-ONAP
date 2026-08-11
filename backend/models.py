@@ -9,6 +9,7 @@ class TelemetryData(Base):
     __tablename__ = "ONAP_DATA"
 
     id: Mapped[int] = mapped_column("ID", BigInteger, primary_key=True, autoincrement=True)
+    vendor_name: Mapped[str] = mapped_column("VENDOR_NAME", String(20), nullable=False)
     node_name: Mapped[str] = mapped_column("NODE_NAME", String(255), nullable=False)
     object_type: Mapped[str] = mapped_column("OBJECT_TYPE", String(20), nullable=False)
     object_id: Mapped[str] = mapped_column("OBJECT_ID", String(255), nullable=False)

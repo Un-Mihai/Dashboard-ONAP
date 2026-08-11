@@ -8,14 +8,21 @@ from collections.abc import Generator
 from file_manager import get_files, mark_file
 from crud import get_followed_metrics, save_batch
 
+def clear_memory(elem):
+    elem.clear()
+    parent = elem.getparent()
+    if parent is not None:
+        parent.remove(elem)
+
 
 def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[str, str | int], None, None]:
 
     namespace = os.getenv('XML_NAMESPACE')
-
+    fileHeader_tag = f"{{{namespace}}}fileHeader"
+    fileSender_tag = f"{{{namespace}}}fileSender"
     granPeriod_tag = f"{{{namespace}}}granPeriod"
     measData_tag = f"{{{namespace}}}measData"
-    measEntity_tag = f"{{{namespace}}}measEntity"
+    #measEntity_tag = f"{{{namespace}}}measEntity"
     measInfo_tag = f"{{{namespace}}}measInfo"
     measType_tag = f"{{{namespace}}}measType"
     measValue_tag = f"{{{namespace}}}measValue"
@@ -24,75 +31,72 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
     file_data = etree.iterparse(file_path, events=('start', 'end'))
 
     for event, elem in file_data:
-        if event == 'start' and elem.tag == measData_tag:
-            begin_time = datetime.fromisoformat(elem.get('beginTime'))
-            break
+        if event != 'start':
+            continue
 
-        if event == 'start' and elem.tag == measEntity_tag:
+        if elem.tag == fileHeader_tag:
+            vendor_name = elem.get('vendorName')
+            continue
+        
+        if elem.tag == fileSender_tag:
+            node_name = elem.get('senderName').split('-')[1]
+            continue
+
+        if elem.tag == measData_tag:
+            begin_time = datetime.fromisoformat(elem.get('beginTime'))
             break
 
     metrics = {}
     accumulator = {}
 
     for event, elem in file_data:
+        if event == 'start':
+            if elem.tag == measInfo_tag:
+                metrics.clear()
+                accumulator.clear()
 
-        if event == 'start' and elem.tag == measEntity_tag:
-            node_name = elem.get('userLabel')
-            continue
-        
-        if event == 'start' and elem.tag == measInfo_tag:
-            metrics.clear()
-            accumulator.clear()
             continue
 
-        if event == 'end' and elem.tag == granPeriod_tag:
-            duration_str = elem.get('duration')
-            granularity = int(re.search(r'\d+', duration_str).group())
+        if elem.tag == granPeriod_tag:
+            granularity = int(re.search(r'\d+', elem.get('duration')).group())
             continue
 
-        if event == 'end' and elem.tag == measType_tag:
+        if elem.tag == measType_tag:
             if elem.text.strip() in followed_metrics:
                 id = elem.get('p')
                 metrics[id] = elem.text
 
-            elem.clear()
-            parent = elem.getparent()
-            if parent is not None:
-                parent.remove(elem)
+            clear_memory(elem)
             continue
 
-        if event == 'end' and elem.tag == measValue_tag:
+        if elem.tag == measValue_tag:
             measObjLdn_string = elem.get('measObjLdn')
             pairs = measObjLdn_string.split(',')
             measObjLdn_dict = dict(p.split('=', 1) for p in pairs if '=' in p)
 
-            if "NRCELL" in measObjLdn_dict.keys():
-                object_type = "Cell"
-                cell_nr = measObjLdn_dict.get('NRCELL')
+            object_type = None
+            followed_objects = ["NRCELL", "LNCEL", "EQM", "LNBTS", "NRBTS"]
+            object_type = [elem for elem in followed_objects if elem in measObjLdn_dict.keys()]
+            object_type = object_type[0] if object_type else None
+            object_id = measObjLdn_dict.get(object_type) if object_type is not None else None
 
+
+            if object_type is not None:
                 for r in elem.findall(r_tag):
                     
                     id = r.get('p')
                     metric_name = metrics.get(id)
 
-                    # if metric_name in ["VS.NCUPNRG.DL_PRB_UTIL_RATIO_DNOM", "VS.NCUPNRG.UL_PRB_UTIL_RATIO_DNOM"]:
-                    #         print(f"DEBUG {metric_name} | Obiect Brut: {measObjLdn_string} | Valoare: {r.text}")
-
                     if metric_name is not None:
-
-                        unique_key = (object_type, int(cell_nr), metric_name)
-
+                        unique_key = (object_type, int(object_id), metric_name)
                         accumulator[unique_key] = int(r.text)
 
-            elem.clear()
-            parent = elem.getparent()
+            clear_memory(elem)
 
-            if parent is not None:
-                parent.remove(elem)
-
-        if event == 'end' and elem.tag == measInfo_tag:
+        if elem.tag == measInfo_tag:
             for (obj_type, obj_id, m_name), value in accumulator.items():
                     yield {
+                        "vendor_name": vendor_name,
                         "node_name": node_name,
                         "object_type": obj_type,
                         "object_id": obj_id,
@@ -103,10 +107,7 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
                         "granularity": granularity
                     }
                     
-            elem.clear()
-            parent = elem.getparent()
-            if parent is not None:
-                parent.remove(elem)
+            clear_memory(elem)
 
 
 def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
