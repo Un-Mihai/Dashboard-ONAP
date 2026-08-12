@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import Sidebar from './components/Sidebar';
-import NetworkOverview from './components/NetworkOverview';
-import EnergySustainability from './components/EnergySustainability';
-import CapacityTraffic from './components/CapacityTraffic';
-import StationDetails from './components/StationDetails';
-import ActiveAlarms from './components/ActiveAlarms';
+
+import Sidebar from './components/Sidebar/Sidebar';
+import NetworkOverview from './components/pages/NetworkOverview/NetworkOverview';
+import EnergySustainability from './components/pages/EnergySustainability/EnergySustainability';
+import CapacityTraffic from './components/pages/CapacityTraffic/CapacityTraffic';
+import StationDetails from './components/pages/StationDetails/StationDetails';
+import ActiveAlarms from './components/pages/ActiveAlarms/ActiveAlarms';
 
 function App() {
   const [activeTab, setActiveTab] = useState('overview');

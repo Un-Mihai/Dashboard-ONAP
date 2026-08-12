@@ -1,0 +1,36 @@
+.capacity-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.capacity-kpi-grid .capacity-card {
+  margin-bottom: 0; /* Suprascriem marginea jos în grid */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.capacity-kpi-grid h4 {
+  margin: 0 0 8px 0;
+  color: #8b949e;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.kpi-value {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #58a6ff; /* Albastru standard pentru throughput normal */
+}
+
+/* Culorile specifice stărilor de alertă din KPI */
+.kpi-value.warning {
+  color: #d29922; /* Galben/Portocaliu */
+}
+
+.kpi-value.critical {
+  color: #f85149; /* Roșu */
+}
