@@ -1,93 +1,23 @@
 .capacity-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 20px;
+  background-color: #0d1117; /* Fundalul dark principal */
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
+/* Stil general pentru cardurile wrapper folosite în pagină */
 .capacity-card {
   background-color: #161b22;
   border: 1px solid #30363d;
-  border-radius: 8px;
-  padding: 20px;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.capacity-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
   color: #c9d1d9;
-}
-
-/* KPI Cards */
-.capacity-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-}
-
-.kpi-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #58a6ff;
-  margin: 10px 0 0 0;
-}
-
-.kpi-value.warning {
-  color: #d29922;
-}
-
-.kpi-value.critical {
-  color: #f85149;
-}
-
-/* Containere Grafice */
-.capacity-charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.chart-box-280 {
-  height: 280px;
-  margin-top: 15px;
-}
-
-/* Tabele */
-.capacity-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-  color: #c9d1d9;
-}
-
-.capacity-table th {
-  padding: 12px;
-  color: #8b949e;
-  font-size: 13px;
-  text-align: left;
-  border-bottom: 1px solid #30363d;
-  background-color: #0d1117;
-}
-
-.capacity-table td {
-  padding: 12px;
-  font-size: 14px;
-  border-bottom: 1px solid #21262d;
-}
-
-/* Badge-uri Ocupare PRB */
-.prb-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: bold;
-}
-
-.prb-badge.normal {
-  background-color: #238636;
-  color: #fff;
-}
-
-.prb-badge.high {
-  background-color: #bb8009;
-  color: #fff;
-}
-
-.prb-badge.critical {
-  background-color: #da3633;
-  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
 }

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import {
-  AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts';
+import StationHeader from './components/StationHeader/StationHeader';
+import StationPanelsGrid from './components/StationPanelsGrid/StationPanelsGrid';
+import StationChartsGrid from './components/StationChartsGrid/StationChartsGrid';
 import './StationDetails.css';
 
 const availableStations = [
@@ -34,181 +34,27 @@ export default function StationDetails() {
 
   return (
     <div className="station-details-container">
-      <div className="station-card station-header">
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="station-select-group">
-            <label htmlFor="gnb-select" style={{ color: '#8b949e', fontWeight: 'bold' }}>Stație Principală:</label>
-            <select 
-              id="gnb-select"
-              className="station-select"
-              value={selectedGnb}
-              onChange={(e) => setSelectedGnb(e.target.value)}
-            >
-              {availableStations.map((st) => (
-                <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
-              ))}
-            </select>
-          </div>
+      <StationHeader 
+        availableStations={availableStations}
+        selectedGnb={selectedGnb}
+        setSelectedGnb={setSelectedGnb}
+        compareGnb={compareGnb}
+        setCompareGnb={setCompareGnb}
+        isComparing={isComparing}
+        setIsComparing={setIsComparing}
+        currentSt={currentSt}
+        handleExportPDF={handleExportPDF}
+      />
 
-          {isComparing && (
-            <div className="station-select-group">
-              <label htmlFor="gnb-compare-select" style={{ color: '#d29922', fontWeight: 'bold' }}>Compară cu:</label>
-              <select 
-                id="gnb-compare-select"
-                className="station-select"
-                value={compareGnb}
-                onChange={(e) => setCompareGnb(e.target.value)}
-              >
-                {availableStations.filter(st => st.id !== selectedGnb).map((st) => (
-                  <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
+      <StationPanelsGrid 
+        currentSt={currentSt}
+        compareSt={compareSt}
+        isComparing={isComparing}
+      />
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button 
-            onClick={() => setIsComparing(!isComparing)}
-            style={{
-              backgroundColor: isComparing ? '#d29922' : '#21262d',
-              color: isComparing ? '#0d1117' : '#c9d1d9',
-              border: '1px solid #30363d', padding: '8px 14px', borderRadius: '6px',
-              cursor: 'pointer', fontWeight: 'bold', fontSize: '13px'
-            }}
-          >
-            {isComparing ? 'Închide Comparația' : 'Compară Stații'}
-          </button>
-
-          <button 
-            onClick={handleExportPDF}
-            style={{
-              backgroundColor: '#238636', color: 'white', border: 'none',
-              padding: '8px 14px', borderRadius: '6px', cursor: 'pointer',
-              fontWeight: 'bold', fontSize: '13px'
-            }}
-          >
-            Exportă Raport PDF
-          </button>
-
-          <div className="station-status-badges">
-            <span className={`badge ${currentSt.power > 0 ? 'online' : 'down'}`}>
-              {currentSt.power > 0 ? 'ONLINE' : 'OFFLINE'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="station-panels-grid">
-        <div className="station-card">
-          <h3 style={{ borderBottom: '1px solid #30363d', paddingBottom: '10px', marginTop: 0 }}>
-            Panou Energie & Tensiune {isComparing && `(${currentSt.id} vs ${compareSt.id})`}
-          </h3>
-          <div className="metrics-list">
-            <div className="metric-item">
-              <span className="metric-label">Putere Medie (RU_AVG_PWR_USAGE)</span>
-              <span className="metric-value" style={{ color: '#d29922' }}>
-                {currentSt.power} W {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.power} W</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Tensiune Intrare (Voltage)</span>
-              <span className="metric-value" style={{ color: '#d29922' }}>
-                {currentSt.voltage} V {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.voltage} V</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Consum 15 min (kWh)</span>
-              <span className="metric-value" style={{ color: '#d29922' }}>
-                {currentSt.kwh} kWh {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.kwh} kWh</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Eficiență Energetică</span>
-              <span className="metric-value" style={{ color: '#3fb950' }}>
-                {currentSt.eff} GB/kWh {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.eff} GB/kWh</span>}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="station-card">
-          <h3 style={{ borderBottom: '1px solid #30363d', paddingBottom: '10px', marginTop: 0 }}>
-            Panou Trafic & Viteze {isComparing && `(${currentSt.id} vs ${compareSt.id})`}
-          </h3>
-          <div className="metrics-list">
-            <div className="metric-item">
-              <span className="metric-label">Volum Downlink (DL)</span>
-              <span className="metric-value">
-                {currentSt.dlGb} GB {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.dlGb} GB</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Volum Uplink (UL)</span>
-              <span className="metric-value">
-                {currentSt.ulGb} GB {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.ulGb} GB</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Throughput Downlink</span>
-              <span className="metric-value">
-                {currentSt.dlMbps} Mbps {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.dlMbps} Mbps</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Throughput Uplink</span>
-              <span className="metric-value">
-                {currentSt.ulMbps} Mbps {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.ulMbps} Mbps</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Ocupare PRB DL (Curent)</span>
-              <span className="metric-value" style={{ color: '#f85149' }}>
-                {currentSt.prb}% {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.prb}%</span>}
-              </span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Peak PRB (Max)</span>
-              <span className="metric-value" style={{ color: '#f85149' }}>
-                {currentSt.peakPrb}% {isComparing && <span style={{ color: '#8b949e', fontSize: '12px' }}>/ {compareSt.peakPrb}%</span>}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="station-charts-grid">
-        <div className="station-card">
-          <h3>Ocupare PRB DL (%) - Medie vs Peak</h3>
-          <div className="chart-box">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stationHistoryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-                <XAxis dataKey="time" stroke="#8b949e" />
-                <YAxis stroke="#8b949e" />
-                <Tooltip contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d' }} />
-                <Area type="monotone" dataKey="prbPeak" name="Peak PRB (%)" stroke="#f85149" fill="#f8514922" />
-                <Area type="monotone" dataKey="prb" name="PRB Mediu (%)" stroke="#58a6ff" fill="#58a6ff22" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="station-card">
-          <h3>Consum Electric în Timp (Watts)</h3>
-          <div className="chart-box">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stationHistoryData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-                <XAxis dataKey="time" stroke="#8b949e" />
-                <YAxis stroke="#8b949e" />
-                <Tooltip contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d' }} />
-                <Line type="monotone" dataKey="power" name="Putere (W)" stroke="#d29922" strokeWidth={2} dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      <StationChartsGrid 
+        data={stationHistoryData}
+      />
     </div>
   );
 }
