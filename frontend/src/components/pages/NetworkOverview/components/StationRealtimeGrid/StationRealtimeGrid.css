@@ -1,0 +1,28 @@
+.station-grid-card {
+  width: 100%;
+}
+
+.station-item {
+  position: relative;
+  border-radius: 6px;
+  padding: 12px;
+  background: #161b22;
+}
+
+.station-alert-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #f85149;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid #0d1117;
+  box-shadow: 0 0 8px rgba(248, 81, 73, 0.6);
+}

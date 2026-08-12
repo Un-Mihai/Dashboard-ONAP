@@ -1,0 +1,9 @@
+.availability-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.availability-card .green {
+  color: #2ea043;
+}

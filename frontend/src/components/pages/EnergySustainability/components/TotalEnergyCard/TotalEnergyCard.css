@@ -1,0 +1,5 @@
+.total-energy-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

@@ -1,0 +1,27 @@
+.energy-table-card {
+  width: 100%;
+}
+
+.recommendation-badge.eco {
+  background-color: #1f6beb;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.recommendation-badge.offline {
+  color: #8b949e;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.recommendation-badge.optimal {
+  color: #2ea043;
+  font-size: 12px;
+  font-weight: bold;
+}
