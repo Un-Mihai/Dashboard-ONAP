@@ -1,11 +1,4 @@
 import React, { useState } from 'react';
-<<<<<<< HEAD
-import Sidebar from "./components/Sidebar/Sidebar";
-import NetworkOverview from "./components/pages/NetworkOverview/NetworkOverview";
-import EnergySustainability from "./components/pages/EnergySustainability/EnergySustainability";
-import CapacityTraffic from "./components/pages/CapacityTraffic/CapacityTraffic";
-import StationDetails from "./components/pages/StationDetails/StationDetails";
-=======
 
 import Sidebar from './components/Sidebar/Sidebar';
 import NetworkOverview from './components/pages/NetworkOverview/NetworkOverview';
@@ -14,7 +7,6 @@ import CapacityTraffic from './components/pages/CapacityTraffic/CapacityTraffic'
 import StationDetails from './components/pages/StationDetails/StationDetails';
 import ActiveAlarms from './components/pages/ActiveAlarms/ActiveAlarms';
 
->>>>>>> f6eafbae4beaf954074d4d5918904829d6f25094
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewMode, setViewMode] = useState('grafic');
