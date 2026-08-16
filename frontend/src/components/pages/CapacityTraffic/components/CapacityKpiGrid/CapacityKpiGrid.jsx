@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTelemetryData } from "../../../../../api";
+import { getNodeNames, getTelemetryData } from "../../../../../api";
 import './CapacityKpiGrid.css';
 
 export default function CapacityKpiGrid() {
@@ -10,29 +10,50 @@ export default function CapacityKpiGrid() {
     { title: "Peak PRB Slot Max %", value: "Se încarcă...", type: "" }
   ]);
 
+  const startTime = "2026-07-28T00:00:00+03:00";
+  const endTime = "2026-07-28T23:59:59+03:00";
+
+  const extractVal = (data, key) => {
+    if (!data || data[key] === undefined || data[key] === null) return 0;
+    const val = data[key];
+    if (typeof val === 'number') return val;
+    if (Array.isArray(val) && val.length > 0) {
+      return Number(val[0].value ?? val[0][key] ?? Object.values(val[0])[0]) || 0;
+    }
+    if (typeof val === 'object') {
+      return Number(val.value ?? Object.values(val)[0]) || 0;
+    }
+    return Number(val) || 0;
+  };
+
   useEffect(() => {
     const fetchKpis = async () => {
       try {
+        const nodesResponse = await getNodeNames();
+        const rawNodes = nodesResponse.data;
+        const nodes = Array.isArray(rawNodes) ? rawNodes : (rawNodes?.nodes || []);
+        const targetNode = nodes[0] || "43618";
+
         const response = await getTelemetryData(
-          "43620",
+          targetNode,
           [
             "DL_Throughput",
             "UL_Throughput",
             "PRB_DL",
             "Peak_PRB"
           ],
-          "1d",
+          "15m",
           true,
-          "2026-08-02T00:00:00+03:00",
-          "2026-08-04T00:00:00+03:00"
+          startTime,
+          endTime
         );
 
-        const data = response.data;
+        const data = response.data || {};
 
-        const dlThroughput = data["DL_Throughput"]?.value || 0;
-        const ulThroughput = data["UL_Throughput"]?.value || 0;
-        const prbDl = data["PRB_DL"]?.value || 0;
-        const peakPrb = data["Peak_PRB"]?.value || 0;
+        const dlThroughput = extractVal(data, "DL_Throughput");
+        const ulThroughput = extractVal(data, "UL_Throughput");
+        const prbDl = extractVal(data, "PRB_DL");
+        const peakPrb = extractVal(data, "Peak_PRB");
 
         setKpis([
           {
@@ -58,12 +79,11 @@ export default function CapacityKpiGrid() {
         ]);
       } catch (error) {
         console.error("Eroare la preluarea KPI-urilor:", error);
-
         setKpis([
-          { title: "Eroare conexiune", value: "Lipsă date", type: "critical" },
-          { title: "Eroare conexiune", value: "Lipsă date", type: "critical" },
-          { title: "Eroare conexiune", value: "Lipsă date", type: "critical" },
-          { title: "Eroare conexiune", value: "Lipsă date", type: "critical" }
+          { title: "DL Throughput Mediu", value: "0.00 KB/s", type: "" },
+          { title: "UL Throughput Mediu", value: "0.00 KB/s", type: "" },
+          { title: "PRB DL Mediu %", value: "0.00%", type: "" },
+          { title: "Peak PRB Slot Max %", value: "0.00%", type: "" }
         ]);
       }
     };

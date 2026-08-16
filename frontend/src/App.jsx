@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
-
-import Sidebar from './components/Sidebar/Sidebar';
-import NetworkOverview from './components/pages/NetworkOverview/NetworkOverview';
-import EnergySustainability from './components/pages/EnergySustainability/EnergySustainability';
-import CapacityTraffic from './components/pages/CapacityTraffic/CapacityTraffic';
-import StationDetails from './components/pages/StationDetails/StationDetails';
-import ActiveAlarms from './components/pages/ActiveAlarms/ActiveAlarms';
-
+import Sidebar from "./components/Sidebar/Sidebar";
+import NetworkOverview from "./components/pages/NetworkOverview/NetworkOverview";
+import EnergySustainability from "./components/pages/EnergySustainability/EnergySustainability";
+import CapacityTraffic from "./components/pages/CapacityTraffic/CapacityTraffic";
+import StationDetails from "./components/pages/StationDetails/StationDetails";
 function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewMode, setViewMode] = useState('grafic');
@@ -19,8 +16,7 @@ function App() {
         return <EnergySustainability viewMode={viewMode} />;
       case 'capacity':
         return <CapacityTraffic viewMode={viewMode} />;
-      // Aici am corectat ID-ul pentru a se potrivi cu Sidebar-ul
-      case 'station':
+      case 'station-details':
         return <StationDetails />;
       case 'alarms':
         return <ActiveAlarms />;
@@ -42,7 +38,7 @@ function App() {
           <h2 style={{ color: '#f0f6fc', margin: 0, textTransform: 'uppercase' }}>
             {activeTab.replace('-', ' ')}
           </h2>
-          {activeTab !== 'alarms' && activeTab !== 'station' && (
+          {activeTab !== 'alarms' && activeTab !== 'station-details' && (
             <span style={{ fontSize: '12px', color: '#8b949e', backgroundColor: '#161b22', padding: '6px 12px', borderRadius: '12px', border: '1px solid #30363d' }}>
               Mod Vizualizare: <strong style={{ color: '#58a6ff' }}>{viewMode.toUpperCase()}</strong>
             </span>

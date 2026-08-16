@@ -10,61 +10,78 @@ export default function CapacityTraffic({ viewMode }) {
   const [stationsData, setStationsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Intervalul real din baza de date SQL
+  const startTime = "2026-07-28T00:00:00+03:00";
+  const endTime = "2026-07-28T23:59:59+03:00";
+
+  const metrics = [
+    "DL_Throughput",
+    "PRB_DL",
+    "PRB_UL",
+    "Peak_PRB"
+  ];
+
+  // Helper robust pentru extragerea valorilor agregate
+  const extractVal = (data, key) => {
+    if (!data || data[key] === undefined || data[key] === null) return 0;
+    const val = data[key];
+    if (typeof val === 'number') return val;
+    if (Array.isArray(val) && val.length > 0) {
+      return Number(val[0].value ?? val[0][key] ?? Object.values(val[0])[0]) || 0;
+    }
+    if (typeof val === 'object') {
+      return Number(val.value ?? Object.values(val)[0]) || 0;
+    }
+    return Number(val) || 0;
+  };
+
   useEffect(() => {
     const fetchTableData = async () => {
       try {
         const nodesResponse = await getNodeNames();
-        const nodes = nodesResponse.data;
-
-        const metrics = [
-          "DL_Throughput",
-          "PRB_DL",
-          "PRB_UL",
-          "Peak_PRB"
-        ];
+        const rawNodes = nodesResponse.data;
+        const nodes = Array.isArray(rawNodes) ? rawNodes : (rawNodes?.nodes || []);
 
         const stationPromises = nodes.map(async (nodeName, index) => {
           try {
             const res = await getTelemetryData(
               nodeName,
               metrics,
-              "1d",
+              "15m",
               true,
-              "2026-08-02T00:00:00+03:00",
-              "2026-08-04T00:00:00+03:00"
+              startTime,
+              endTime
             );
 
-            const data = res.data;
+            const data = res.data || {};
+
+            const prbDl = extractVal(data, "PRB_DL");
+            const prbUl = extractVal(data, "PRB_UL");
+            const peakPrb = extractVal(data, "Peak_PRB");
+            const throughputDl = extractVal(data, "DL_Throughput");
 
             return {
               id: index + 1,
               name: `Stația ${nodeName}`,
-              prbDl: data["PRB_DL"]?.value || 0,
-              prbUl: data["PRB_UL"]?.value || 0,
-              peakPrb: data["Peak_PRB"]?.value || 0,
-              throughputDl: data["DL_Throughput"]?.value || 0
+              prbDl: +(prbDl || 0).toFixed(2),
+              prbUl: +(prbUl || 0).toFixed(2),
+              peakPrb: +(peakPrb || 0).toFixed(2),
+              throughputDl: +(throughputDl || 0).toFixed(2)
             };
           } catch (err) {
-            console.error(
-              `Eroare la extragerea datelor pentru stația ${nodeName}`,
-              err
-            );
+            console.error(`Eroare la extragerea datelor pentru stația ${nodeName}`, err);
             return null;
           }
         });
 
         const results = await Promise.all(stationPromises);
-
         const validStations = results
           .filter(st => st !== null)
           .sort((a, b) => b.prbDl - a.prbDl);
 
         setStationsData(validStations);
       } catch (error) {
-        console.error(
-          "Eroare majoră la încărcarea tabelului:",
-          error
-        );
+        console.error("Eroare majoră la încărcarea tabelului:", error);
       } finally {
         setIsLoading(false);
       }
@@ -87,21 +104,14 @@ export default function CapacityTraffic({ viewMode }) {
           marginBottom: '10px'
         }}
       >
-        <h2
-          style={{
-            margin: 0,
-            color: '#c9d1d9'
-          }}
-        >
+        <h2 style={{ margin: 0, color: '#c9d1d9' }}>
           Capacity & Traffic Management
         </h2>
 
         <button
           onClick={() => setShowOnlyCongested(!showOnlyCongested)}
           style={{
-            backgroundColor: showOnlyCongested
-              ? '#da3633'
-              : '#238636',
+            backgroundColor: showOnlyCongested ? '#da3633' : '#238636',
             color: 'white',
             border: 'none',
             padding: '8px 16px',
@@ -110,9 +120,7 @@ export default function CapacityTraffic({ viewMode }) {
             fontWeight: 'bold'
           }}
         >
-          {showOnlyCongested
-            ? 'Elimină Filtru'
-            : 'Filtrează: Congestie (>75%)'}
+          {showOnlyCongested ? 'Elimină Filtru' : 'Filtrează: Congestie (>75%)'}
         </button>
       </div>
 
@@ -123,14 +131,10 @@ export default function CapacityTraffic({ viewMode }) {
           <CapacityChartsGrid />
 
           <div className="capacity-card">
-            <h3>
-              Top Stații Congestionate (Ordonat după Ocuparea PRB DL)
-            </h3>
+            <h3>Top Stații Congestionate (Ordonat după Ocuparea PRB DL)</h3>
 
             {isLoading ? (
-              <p style={{ color: 'white' }}>
-                Se încarcă datele rețelei...
-              </p>
+              <p style={{ color: 'white' }}>Se încarcă datele rețelei...</p>
             ) : (
               <CapacityTable
                 stations={displayedStations}
@@ -144,9 +148,7 @@ export default function CapacityTraffic({ viewMode }) {
           <h3>Raport Detaliat Capacitate & Traffic Radio</h3>
 
           {isLoading ? (
-            <p style={{ color: 'white' }}>
-              Se încarcă datele rețelei...
-            </p>
+            <p style={{ color: 'white' }}>Se încarcă datele rețelei...</p>
           ) : (
             <CapacityTable
               stations={displayedStations}

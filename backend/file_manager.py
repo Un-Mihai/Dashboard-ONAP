@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Încarcă variabilele din .env
+load_dotenv()
 
 script_path = Path(__file__).parent
 
