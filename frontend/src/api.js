@@ -7,8 +7,30 @@ const apiClient = axios.create({
   },
 });
 
-export const getSystemStatus = () => apiClient.get('/status');
-export const getNodeNames = () => apiClient.get('/node_names');
-export const getData = (params) => apiClient.get('/data', { params });
+export const getTelemetryData = (
+  nodeName,
+  metricsList,
+  bucketSize,
+  aggregate,
+  startTime,
+  endTime
+) => {
+  const metricsParam = JSON.stringify({ metrics: metricsList });
+
+  return apiClient.post('/data', null, {
+    params: {
+      node_name: nodeName,
+      metrics: metricsParam,
+      bucket_size: bucketSize,
+      aggregate: aggregate,
+      start_time: startTime,
+      end_time: endTime
+    }
+  });
+};
+
+export const getNodeNames = () => {
+  return apiClient.post('/node_names');
+};
 
 export default apiClient;

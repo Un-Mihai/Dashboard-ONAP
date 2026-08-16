@@ -1,40 +1,253 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+import {
+  getNodeNames,
+  getTelemetryData
+} from "../../../api";
+
 import StationHeader from './components/StationHeader/StationHeader';
 import StationPanelsGrid from './components/StationPanelsGrid/StationPanelsGrid';
 import StationChartsGrid from './components/StationChartsGrid/StationChartsGrid';
+
 import './StationDetails.css';
 
-const availableStations = [
-  { id: 'gNB-1024', name: 'gNB_Timisoara_Centru', power: 350, voltage: 48.2, kwh: 0.087, eff: 166.6, dlGb: 12.4, ulGb: 2.1, dlMbps: 110, ulMbps: 18, prb: 85, peakPrb: 98 },
-  { id: 'gNB-1025', name: 'gNB_Complex_Studentesc', power: 550, voltage: 47.9, kwh: 0.120, eff: 120.0, dlGb: 18.2, ulGb: 3.5, dlMbps: 140, ulMbps: 22, prb: 82, peakPrb: 96 },
-  { id: 'gNB-1026', name: 'gNB_Iulius_Town', power: 850, voltage: 48.2, kwh: 0.210, eff: 95.0, dlGb: 25.0, ulGb: 5.2, dlMbps: 165, ulMbps: 32, prb: 88, peakPrb: 100 },
-  { id: 'gNB-1027', name: 'gNB_Gara_de_Nord', power: 0, voltage: 0, kwh: 0, eff: 0, dlGb: 0, ulGb: 0, dlMbps: 0, ulMbps: 0, prb: 0, peakPrb: 0 },
-];
-
-const stationHistoryData = [
-  { time: '12:00', prb: 45, prbPeak: 70, power: 340 },
-  { time: '12:15', prb: 52, prbPeak: 80, power: 355 },
-  { time: '12:30', prb: 68, prbPeak: 92, power: 390 },
-  { time: '12:45', prb: 85, prbPeak: 98, power: 420 },
-  { time: '13:00', prb: 60, prbPeak: 85, power: 370 },
-  { time: '13:15', prb: 40, prbPeak: 65, power: 330 },
-];
-
 export default function StationDetails() {
-  const [selectedGnb, setSelectedGnb] = useState('gNB-1024');
-  const [compareGnb, setCompareGnb] = useState('gNB-1026');
-  const [isComparing, setIsComparing] = useState(false);
+  const [availableStations, setAvailableStations] = useState([]);
+  const [stationsData, setStationsData] = useState({});
+  const [stationHistoryData, setStationHistoryData] = useState([]);
 
-  const currentSt = availableStations.find(st => st.id === selectedGnb) || availableStations[0];
-  const compareSt = availableStations.find(st => st.id === compareGnb) || availableStations[2];
+  const [selectedGnb, setSelectedGnb] = useState('');
+  const [compareGnb, setCompareGnb] = useState('');
+  const [isComparing, setIsComparing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const startTime = "2026-08-02T00:00:00+03:00";
+  const endTime = "2026-08-04T00:00:00+03:00";
+
+  // 1. Am înlocuit cu numele REALE ale metricilor din baza de date SQL
+  const metrics = [
+    "VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE",     // Putere
+    "VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF", // Voltaj
+    "VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN",             // Trafic DL
+    "VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN"              // Trafic UL
+  ];
+
+  // Încarcă lista de stații
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        const { data: nodes } = await getNodeNames();
+
+        const stations = nodes.map(node => ({
+          id: node,
+          name: `gNB_${node}`
+        }));
+
+        setAvailableStations(stations);
+
+        if (nodes.length > 0) {
+          setSelectedGnb(nodes[0]);
+          setCompareGnb(nodes[1] || nodes[0]);
+        }
+
+      } catch (error) {
+        console.error("Eroare la încărcarea stațiilor:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStations();
+  }, []);
+
+  // Încarcă datele pentru stația selectată
+  useEffect(() => {
+    if (!selectedGnb) return;
+
+    const loadStationData = async () => {
+      try {
+        const { data } = await getTelemetryData(
+          selectedGnb,
+          metrics,
+          "1d",
+          true,
+          startTime,
+          endTime
+        );
+
+        const getValue = metric =>
+          Number(
+            data[metric]?.value ??
+            data[metric]
+          ) || 0;
+
+        // 2. Extragem datele folosind cheile noi
+        const power = getValue("VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE");
+        const voltage = getValue("VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF");
+        const dlBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN");
+        const ulBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN");
+
+        const dlGb = dlBytes / (1024 ** 3);
+        const ulGb = ulBytes / (1024 ** 3);
+        const kwh = power / 1000;
+        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+
+        const station = {
+          id: selectedGnb,
+          name: `gNB_${selectedGnb}`,
+          power: +power.toFixed(2),
+          voltage: +voltage.toFixed(2),
+          kwh: +kwh.toFixed(4),
+          eff: +efficiency.toFixed(4),
+          dlGb: +dlGb.toFixed(4),
+          ulGb: +ulGb.toFixed(4),
+          dlMbps: 0,
+          ulMbps: 0,
+          prb: 0,
+          peakPrb: 0
+        };
+
+        setStationsData(prev => ({
+          ...prev,
+          [selectedGnb]: station
+        }));
+
+      } catch (error) {
+        console.error(`Eroare la încărcarea stației ${selectedGnb}:`, error);
+      }
+    };
+
+    loadStationData();
+  }, [selectedGnb]);
+
+  // Încarcă stația de comparație
+  useEffect(() => {
+    if (!isComparing || !compareGnb) return;
+
+    const loadCompareData = async () => {
+      try {
+        const { data } = await getTelemetryData(
+          compareGnb,
+          metrics,
+          "1d",
+          true,
+          startTime,
+          endTime
+        );
+
+        const getValue = metric =>
+          Number(
+            data[metric]?.value ??
+            data[metric]
+          ) || 0;
+
+        const power = getValue("VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE");
+        const voltage = getValue("VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF");
+        const dlBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN");
+        const ulBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN");
+
+        const dlGb = dlBytes / (1024 ** 3);
+        const ulGb = ulBytes / (1024 ** 3);
+        const kwh = power / 1000;
+        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+
+        setStationsData(prev => ({
+          ...prev,
+          [compareGnb]: {
+            id: compareGnb,
+            name: `gNB_${compareGnb}`,
+            power: +power.toFixed(2),
+            voltage: +voltage.toFixed(2),
+            kwh: +kwh.toFixed(4),
+            eff: +efficiency.toFixed(4),
+            dlGb: +dlGb.toFixed(4),
+            ulGb: +ulGb.toFixed(4),
+            dlMbps: 0,
+            ulMbps: 0,
+            prb: 0,
+            peakPrb: 0
+          }
+        }));
+
+      } catch (error) {
+        console.error(`Eroare la comparația cu ${compareGnb}:`, error);
+      }
+    };
+
+    loadCompareData();
+  }, [compareGnb, isComparing]);
+
+  // Istoric pentru grafice
+  useEffect(() => {
+    if (!selectedGnb) return;
+
+    const loadHistory = async () => {
+      try {
+        const { data } = await getTelemetryData(
+          selectedGnb,
+          ["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"], // Metrica corectă pentru grafic
+          "1h",
+          false, // False pentru a primi seria de timp
+          startTime,
+          endTime
+        );
+
+        const nodesData = Array.isArray(data) ? data : [data];
+        const history = [];
+
+        nodesData.forEach(node => {
+          // Accesăm array-ul cu paranteze pătrate din cauza punctelor din string
+          const powerData = node["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"] || [];
+
+          powerData.forEach(item => {
+            const rawTime = item.bucket_time;
+
+            history.push({
+              rawTime,
+              time: rawTime?.split(" ")[1]?.substring(0, 5),
+              power: Number(item["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"]) || 0,
+              prb: 0,
+              prbPeak: 0
+            });
+          });
+        });
+
+        history.sort(
+          (a, b) =>
+            new Date(a.rawTime.replace(" ", "T")) -
+            new Date(b.rawTime.replace(" ", "T"))
+        );
+
+        setStationHistoryData(history);
+
+      } catch (error) {
+        console.error("Eroare la încărcarea istoricului:", error);
+      }
+    };
+
+    loadHistory();
+  }, [selectedGnb]);
+
+  const currentSt = stationsData[selectedGnb] || {
+    id: selectedGnb,
+    name: `gNB_${selectedGnb}`,
+    power: 0, voltage: 0, kwh: 0, eff: 0,
+    dlGb: 0, ulGb: 0, dlMbps: 0, ulMbps: 0, prb: 0, peakPrb: 0
+  };
+
+  const compareSt = stationsData[compareGnb] || currentSt;
 
   const handleExportPDF = () => {
     window.print();
   };
 
+  if (loading) {
+    return <p className="status-loading">Se încarcă stațiile...</p>;
+  }
+
   return (
     <div className="station-details-container">
-      <StationHeader 
+      <StationHeader
         availableStations={availableStations}
         selectedGnb={selectedGnb}
         setSelectedGnb={setSelectedGnb}
@@ -46,13 +259,13 @@ export default function StationDetails() {
         handleExportPDF={handleExportPDF}
       />
 
-      <StationPanelsGrid 
+      <StationPanelsGrid
         currentSt={currentSt}
         compareSt={compareSt}
         isComparing={isComparing}
       />
 
-      <StationChartsGrid 
+      <StationChartsGrid
         data={stationHistoryData}
       />
     </div>

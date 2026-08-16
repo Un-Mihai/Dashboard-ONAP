@@ -121,7 +121,7 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
     dataframe_final = dataframe_pivot.copy()
 
     granularity_map = {'15m': 900, '15min': 900, '1h': 3600, '24h': 86400, '1d': 86400}
-    dataframe_final['granularity'] = granularity_map.get(bucket_size.lower(), 900)
+    dataframe_final['GRANULARITY'] = granularity_map.get(bucket_size.lower(), 900)
 
     dataframe_final.columns = dataframe_final.columns.str.replace('.', '_')
     dataframe_final = dataframe_final.fillna(0)
