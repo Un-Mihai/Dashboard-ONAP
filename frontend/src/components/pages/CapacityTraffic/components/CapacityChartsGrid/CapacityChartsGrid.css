@@ -1,0 +1,11 @@
+.capacity-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.chart-box-280 {
+  height: 280px;
+  width: 100%;
+}

@@ -1,0 +1,9 @@
+.energy-efficiency-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.energy-efficiency-card .success {
+  color: #2ea043;
+}

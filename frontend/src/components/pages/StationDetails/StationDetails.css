@@ -1,0 +1,61 @@
+.station-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.station-select-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.station-select {
+  background-color: #0d1117;
+  color: #f0f6fc;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.station-select:focus {
+  border-color: #58a6ff;
+}
+
+.station-status-badges {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.badge.online {
+  background-color: rgba(56, 139, 253, 0.15);
+  color: #58a6ff;
+  border: 1px solid rgba(56, 139, 253, 0.4);
+}
+
+.badge.down {
+  background-color: rgba(248, 81, 73, 0.15);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+}
+
+.badge.info {
+  background-color: rgba(31, 107, 235, 0.15);
+  color: #1f6beb;
+  border: 1px solid rgba(31, 107, 235, 0.4);
+}

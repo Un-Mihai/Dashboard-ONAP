@@ -1,0 +1,9 @@
+.average-power-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.average-power-card .warning {
+  color: #d29922;
+}

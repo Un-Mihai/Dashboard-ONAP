@@ -1,0 +1,19 @@
+.station-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.station-charts-grid h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #c9d1d9;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.chart-box {
+  height: 250px;
+  margin-top: 15px;
+  width: 100%;
+}
