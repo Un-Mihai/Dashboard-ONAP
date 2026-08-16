@@ -131,7 +131,10 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
 
     return results
 
-def calculate(db: Session, node_name: str, metric: str, bucket_size: str, start_time, end_time):
+def calculate(db: Session, node_name: str, metric: str, bucket_size: str, aggregate: bool, start_time, end_time):
+
+    if aggregate == True:
+        bucket_size = '15m'
 
     metric_data = metrics.get(metric)
 
@@ -146,9 +149,20 @@ def calculate(db: Session, node_name: str, metric: str, bucket_size: str, start_
     if isinstance(results, dict) and "message" in results:
         return results
     
+    if aggregate == True:
+        aggregation_type = metric_data.get('Aggregation')
+
+        if aggregation_type == 'SUM':
+            value = results.sum()
+        elif aggregation_type == 'AVG':
+            value = results.mean()
+        elif aggregation_type == 'MAX':
+            value = results.max()
+
+        return {"value": value.item() if hasattr(value, 'item') else value}
+
     results.name = metric
     results_export = results.reset_index()
-
     results_export['bucket_time'] = results_export['bucket_time'].astype(str)
 
     return results_export.to_dict(orient='records')

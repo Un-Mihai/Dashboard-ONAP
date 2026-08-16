@@ -20,7 +20,18 @@ class TelemetryData(Base):
     granularity: Mapped[int] = mapped_column("GRANULARITY", Integer, nullable=False)
 
 class Metrics(Base):
-    __tablename__ = "FOLLOWED_METRICS"
+    __tablename__ = "METRICS"
+
+    id: Mapped[int] = mapped_column("ID", Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column("NAME", String(100), nullable=False)
+    type: Mapped[str] = mapped_column("TYPE", String(20), nullable=False)
+    components: Mapped[str] = mapped_column("COMPONENTS", String(500), nullable=False)
+    formula: Mapped[str] = mapped_column("FORMULA", String(700), nullable=False)
+    aggregation: Mapped[str] = mapped_column("AGGREGATION", String(5), nullable=False)
+    units: Mapped[str] = mapped_column("UNITS", String(10), nullable=False)
+
+class Indicators(Base):
+    __tablename__ = "FOLLOWED_INDICATORS"
 
     measurement_type: Mapped[str] = mapped_column("MEASUREMENT_TYPE", String(100), primary_key=True)
     measurement_units: Mapped[str] = mapped_column("MEASUREMENT_VALUE", String(10))

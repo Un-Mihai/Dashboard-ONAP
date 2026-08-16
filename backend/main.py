@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -35,15 +36,24 @@ def unmark_files():
 def parse_data(db: Session = Depends(get_db)):
     parse_files(db)
 
-@app.get("/api/data")
-def get_data(node_name: str, metric: str, bucket_size: str,db: Session = Depends(get_db)):
-    tz_ro = timezone(timedelta(hours=3))
-    start_time = datetime(2026, 8, 2, 0, 0, 0, tzinfo=tz_ro)
-    end_time = datetime(2026, 8, 4, 0, 0, 0, tzinfo=tz_ro)
+tz_ro = timezone(timedelta(hours=3))
+@app.post("/api/data")
+def get_data(node_name: str, 
+             metrics: str, 
+             bucket_size: str,
+             aggregate: bool = False,
+             start_time: datetime = datetime(2026, 8, 2, 0, 0, 0, tzinfo=tz_ro),
+             end_time: datetime = datetime(2026, 8, 4, 0, 0, 0, tzinfo=tz_ro), 
+             db: Session = Depends(get_db)):
 
-    return calculate(db, node_name, metric, bucket_size, start_time, end_time)
+    metrics = json.loads(metrics).get('metrics')
+    results = {"gNB": node_name}
+    for metric in metrics:
+        results[metric] = calculate(db, node_name, metric, bucket_size, aggregate, start_time, end_time)
 
-@app.get("/api/node_names")
+    return results
+
+@app.post("/api/node_names")
 def get_all_node_names(db: Session = Depends(get_db)):
     return get_node_names(db)
 
