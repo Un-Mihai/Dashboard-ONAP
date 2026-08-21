@@ -24,15 +24,16 @@ export default function StationDetails() {
   const startTime = "2026-08-02T00:00:00+03:00";
   const endTime = "2026-08-04T00:00:00+03:00";
 
-  // 1. Am înlocuit cu numele REALE ale metricilor din baza de date SQL
+  // IMPORTANT:
+  // Acestea sunt numele metricilor definite in metric_data.py
   const metrics = [
-    "VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE",     // Putere
-    "VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF", // Voltaj
-    "VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN",             // Trafic DL
-    "VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN"              // Trafic UL
+    "RFM_Energy_Consumption",
+    "RFM_Energy_Monitoring",
+    "DL_Traffic_Volume",
+    "UL_Traffic_Volume"
   ];
 
-  // Încarcă lista de stații
+  // Incarca lista de statii
   useEffect(() => {
     const loadStations = async () => {
       try {
@@ -51,7 +52,7 @@ export default function StationDetails() {
         }
 
       } catch (error) {
-        console.error("Eroare la încărcarea stațiilor:", error);
+        console.error("Eroare la incarcarea statiilor:", error);
       } finally {
         setLoading(false);
       }
@@ -60,7 +61,7 @@ export default function StationDetails() {
     loadStations();
   }, []);
 
-  // Încarcă datele pentru stația selectată
+  // Incarca datele pentru statia selectata
   useEffect(() => {
     if (!selectedGnb) return;
 
@@ -75,32 +76,38 @@ export default function StationDetails() {
           endTime
         );
 
+        console.log("STATION API:", data);
+
         const getValue = metric =>
           Number(
             data[metric]?.value ??
             data[metric]
           ) || 0;
 
-        // 2. Extragem datele folosind cheile noi
-        const power = getValue("VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE");
-        const voltage = getValue("VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF");
-        const dlBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN");
-        const ulBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN");
+        const power = getValue("RFM_Energy_Consumption");
+        const voltage = getValue("RFM_Energy_Monitoring");
+        const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
+        const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
 
-        const dlGb = dlBytes / (1024 ** 3);
-        const ulGb = ulBytes / (1024 ** 3);
         const kwh = power / 1000;
-        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+
+        const efficiency =
+          kwh > 0
+            ? (dlGb + ulGb) / kwh
+            : 0;
 
         const station = {
           id: selectedGnb,
           name: `gNB_${selectedGnb}`,
+
           power: +power.toFixed(2),
           voltage: +voltage.toFixed(2),
           kwh: +kwh.toFixed(4),
           eff: +efficiency.toFixed(4),
+
           dlGb: +dlGb.toFixed(4),
           ulGb: +ulGb.toFixed(4),
+
           dlMbps: 0,
           ulMbps: 0,
           prb: 0,
@@ -113,14 +120,17 @@ export default function StationDetails() {
         }));
 
       } catch (error) {
-        console.error(`Eroare la încărcarea stației ${selectedGnb}:`, error);
+        console.error(
+          `Eroare la incarcarea statiei ${selectedGnb}:`,
+          error
+        );
       }
     };
 
     loadStationData();
   }, [selectedGnb]);
 
-  // Încarcă stația de comparație
+  // Incarca statia de comparatie
   useEffect(() => {
     if (!isComparing || !compareGnb) return;
 
@@ -135,33 +145,44 @@ export default function StationDetails() {
           endTime
         );
 
+        console.log("COMPARE API:", data);
+
         const getValue = metric =>
           Number(
             data[metric]?.value ??
             data[metric]
           ) || 0;
 
-        const power = getValue("VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE");
-        const voltage = getValue("VS.SBTS_RFM_Energy_Monitoring.MAX_INPUT_VOLTAGE_IN_RF");
-        const dlBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN");
-        const ulBytes = getValue("VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN");
+        const power = getValue("RFM_Energy_Consumption");
+        const voltage = getValue("RFM_Energy_Monitoring");
 
-        const dlGb = dlBytes / (1024 ** 3);
-        const ulGb = ulBytes / (1024 ** 3);
+        const dlGb =
+          getValue("DL_Traffic_Volume") / (1024 ** 3);
+
+        const ulGb =
+          getValue("UL_Traffic_Volume") / (1024 ** 3);
+
         const kwh = power / 1000;
-        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+
+        const efficiency =
+          kwh > 0
+            ? (dlGb + ulGb) / kwh
+            : 0;
 
         setStationsData(prev => ({
           ...prev,
           [compareGnb]: {
             id: compareGnb,
             name: `gNB_${compareGnb}`,
+
             power: +power.toFixed(2),
             voltage: +voltage.toFixed(2),
             kwh: +kwh.toFixed(4),
             eff: +efficiency.toFixed(4),
+
             dlGb: +dlGb.toFixed(4),
             ulGb: +ulGb.toFixed(4),
+
             dlMbps: 0,
             ulMbps: 0,
             prb: 0,
@@ -170,7 +191,10 @@ export default function StationDetails() {
         }));
 
       } catch (error) {
-        console.error(`Eroare la comparația cu ${compareGnb}:`, error);
+        console.error(
+          `Eroare la comparatia cu ${compareGnb}:`,
+          error
+        );
       }
     };
 
@@ -185,76 +209,159 @@ export default function StationDetails() {
       try {
         const { data } = await getTelemetryData(
           selectedGnb,
-          ["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"], // Metrica corectă pentru grafic
+          [
+            "RFM_Energy_Consumption",
+            "PRB_DL",
+            "Peak_PRB"
+          ],
           "1h",
-          false, // False pentru a primi seria de timp
+          false,
           startTime,
           endTime
         );
 
-        const nodesData = Array.isArray(data) ? data : [data];
+        console.log("HISTORY API:", data);
+
+        const nodesData = Array.isArray(data)
+          ? data
+          : [data];
+
         const history = [];
 
         nodesData.forEach(node => {
-          // Accesăm array-ul cu paranteze pătrate din cauza punctelor din string
-          const powerData = node["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"] || [];
+          const powerData =
+            node["RFM_Energy_Consumption"] || [];
 
-          powerData.forEach(item => {
-            const rawTime = item.bucket_time;
+          const prbData =
+            node["PRB_DL"] || [];
+
+          const peakPrbData =
+            node["Peak_PRB"] || [];
+
+          const length = Math.max(
+            powerData.length,
+            prbData.length,
+            peakPrbData.length
+          );
+
+          for (let i = 0; i < length; i++) {
+            const powerItem =
+              powerData[i] || {};
+
+            const prbItem =
+              prbData[i] || {};
+
+            const peakPrbItem =
+              peakPrbData[i] || {};
+
+            const rawTime =
+              powerItem.bucket_time ||
+              prbItem.bucket_time ||
+              peakPrbItem.bucket_time;
+
+            const power =
+              Number(
+                powerItem["RFM_Energy_Consumption"]
+              ) || 0;
+
+            const prb =
+              Number(
+                prbItem["PRB_DL"]
+              ) || 0;
+
+            const prbPeak =
+              Number(
+                peakPrbItem["Peak_PRB"]
+              ) || 0;
 
             history.push({
               rawTime,
-              time: rawTime?.split(" ")[1]?.substring(0, 5),
-              power: Number(item["VS.SBTS_RFM_Energy_Monitoring.RU_AVG_PWR_USAGE"]) || 0,
-              prb: 0,
-              prbPeak: 0
+
+              time: rawTime
+                ?.split(" ")[1]
+                ?.substring(0, 5),
+
+              power: +power.toFixed(2),
+              prb: +prb.toFixed(2),
+              prbPeak: +prbPeak.toFixed(2)
             });
-          });
+          }
         });
 
         history.sort(
           (a, b) =>
-            new Date(a.rawTime.replace(" ", "T")) -
-            new Date(b.rawTime.replace(" ", "T"))
+            new Date(
+              a.rawTime.replace(" ", "T")
+            ) -
+            new Date(
+              b.rawTime.replace(" ", "T")
+            )
         );
+
+        console.log("HISTORY:", history);
 
         setStationHistoryData(history);
 
       } catch (error) {
-        console.error("Eroare la încărcarea istoricului:", error);
+        console.error(
+          "Eroare la incarcarea istoricului:",
+          error
+        );
       }
     };
 
     loadHistory();
   }, [selectedGnb]);
 
-  const currentSt = stationsData[selectedGnb] || {
-    id: selectedGnb,
-    name: `gNB_${selectedGnb}`,
-    power: 0, voltage: 0, kwh: 0, eff: 0,
-    dlGb: 0, ulGb: 0, dlMbps: 0, ulMbps: 0, prb: 0, peakPrb: 0
-  };
+  const currentSt =
+    stationsData[selectedGnb] || {
+      id: selectedGnb,
+      name: `gNB_${selectedGnb}`,
 
-  const compareSt = stationsData[compareGnb] || currentSt;
+      power: 0,
+      voltage: 0,
+      kwh: 0,
+      eff: 0,
+
+      dlGb: 0,
+      ulGb: 0,
+
+      dlMbps: 0,
+      ulMbps: 0,
+
+      prb: 0,
+      peakPrb: 0
+    };
+
+  const compareSt =
+    stationsData[compareGnb] || currentSt;
 
   const handleExportPDF = () => {
     window.print();
   };
 
   if (loading) {
-    return <p className="status-loading">Se încarcă stațiile...</p>;
+    return (
+      <p className="status-loading">
+        Se incarca statiile...
+      </p>
+    );
   }
 
   return (
     <div className="station-details-container">
+
       <StationHeader
         availableStations={availableStations}
         selectedGnb={selectedGnb}
         setSelectedGnb={setSelectedGnb}
+
         compareGnb={compareGnb}
         setCompareGnb={setCompareGnb}
+
         isComparing={isComparing}
         setIsComparing={setIsComparing}
+
         currentSt={currentSt}
         handleExportPDF={handleExportPDF}
       />
@@ -268,6 +375,7 @@ export default function StationDetails() {
       <StationChartsGrid
         data={stationHistoryData}
       />
+
     </div>
   );
 }
