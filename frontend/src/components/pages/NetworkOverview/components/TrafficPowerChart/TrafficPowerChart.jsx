@@ -4,23 +4,78 @@ import {
 } from 'recharts';
 import './TrafficPowerChart.css';
 
-export default function TrafficPowerChart({ data = [] }) {
+export default function TrafficPowerChart({ 
+  data = [], 
+  bucketSize = '15m', 
+  onBucketChange,
+  selectedStation = 'ALL' 
+}) {
+  const stationLabel = selectedStation === 'ALL' ? 'Toată Rețeaua' : `gNB_${selectedStation}`;
+
   return (
     <div className="overview-card traffic-chart-card">
-      <h3>Trafic Total (GB) vs. Putere Consumată (W) în ultimele 24h</h3>
+      <div className="traffic-chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+        <h3 style={{ margin: 0 }}>Trafic Total (GB) vs. Putere Consumată (W) — {stationLabel}</h3>
+        
+        {/* Selector de granularitate dedicat exclusiv graficului */}
+        <div className="chart-granularity-control" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
+          <select 
+            value={bucketSize} 
+            onChange={(e) => onBucketChange(e.target.value)}
+            className="filter-select"
+          >
+            <option value="15m">15 Minute (15m)</option>
+            <option value="1h">1 Oră (1h)</option>
+            <option value="1d">1 Zi (1d)</option>
+          </select>
+        </div>
+      </div>
+
       <div className="chart-wrapper">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-            <XAxis dataKey="time" stroke="#8b949e" />
-            <YAxis yAxisId="left" stroke="#58a6ff" />
-            <YAxis yAxisId="right" orientation="right" stroke="#e34c26" />
-            <Tooltip contentStyle={{ backgroundColor: '#161b22', border: '1px solid #30363d' }} />
-            <Legend />
-            <Line yAxisId="left" type="monotone" dataKey="trafic" name="Trafic (GB)" stroke="#58a6ff" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line yAxisId="right" type="monotone" dataKey="putere" name="Putere (W)" stroke="#e34c26" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          </LineChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8b949e' }}>
+            Nu există date de telemetrie pentru selecția curentă.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+              <XAxis dataKey="time" stroke="#8b949e" />
+              <YAxis yAxisId="left" stroke="#58a6ff" unit=" GB" />
+              <YAxis yAxisId="right" orientation="right" stroke="#e34c26" unit=" W" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#161b22', 
+                  border: '1px solid #30363d',
+                  borderRadius: '6px',
+                  color: '#c9d1d9'
+                }} 
+              />
+              <Legend />
+              <Line 
+                yAxisId="left" 
+                type="monotone" 
+                dataKey="trafic" 
+                name="Trafic (GB)" 
+                stroke="#58a6ff" 
+                strokeWidth={2} 
+                dot={{ r: 4 }} 
+                activeDot={{ r: 6 }} 
+              />
+              <Line 
+                yAxisId="right" 
+                type="monotone" 
+                dataKey="putere" 
+                name="Putere (W)" 
+                stroke="#e34c26" 
+                strokeWidth={2} 
+                dot={{ r: 4 }} 
+                activeDot={{ r: 6 }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

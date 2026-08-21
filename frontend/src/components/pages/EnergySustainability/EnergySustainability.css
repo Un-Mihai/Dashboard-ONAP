@@ -1,3 +1,9 @@
+.energy-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .energy-container {
   display: grid;
   gap: 20px;
@@ -9,6 +15,42 @@
   border-radius: 8px;
   padding: 20px;
   color: #c9d1d9;
+}
+
+/* Bara de Filtre Dropdown */
+.filters-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.filter-select {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+  border-color: #58a6ff;
 }
 
 /* KPI Cards */

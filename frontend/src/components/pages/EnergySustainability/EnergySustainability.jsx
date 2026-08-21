@@ -16,7 +16,12 @@ export default function EnergySustainability({ viewMode }) {
   const [energyData, setEnergyData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Intervalul real prezent în baza de date SQL
+  // Stare selecție stație + granularitate pe graficul de eficiență
+  const [selectedStation, setSelectedStation] = useState('ALL');
+  const [chartBucketSize, setChartBucketSize] = useState('15m');
+  const [availableNodes, setAvailableNodes] = useState([]);
+
+  // Intervalul real din baza de date
   const startTime = "2026-07-28T00:00:00+03:00";
   const endTime = "2026-07-28T23:59:59+03:00";
 
@@ -27,7 +32,6 @@ export default function EnergySustainability({ viewMode }) {
     "UL_Traffic_Volume"
   ];
 
-  // Helper robust pentru extragerea valorilor agregate
   const extractVal = (data, key) => {
     if (!data || data[key] === undefined || data[key] === null) return 0;
     const val = data[key];
@@ -41,36 +45,54 @@ export default function EnergySustainability({ viewMode }) {
     return Number(val) || 0;
   };
 
-  // Helper pentru extragerea timestamp-ului
   const extractTime = (item) => {
     return item.bucket_time || item.time || item.timestamp || item.period_start_time || "";
   };
 
-  // Formatare oră (HH:MM)
-  const formatDisplayTime = (timeStr) => {
+  const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) return "";
-    const cleanStr = timeStr.replace(" ", "T");
-    const d = new Date(cleanStr);
-    if (!isNaN(d.getTime())) {
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+    let cleanIso = timeStr.trim().replace(" ", "T");
+    if (!cleanIso.endsWith("Z") && !cleanIso.includes("+")) {
+      cleanIso += "Z";
     }
-    const parts = timeStr.split(/[\sT]/);
-    return parts[1] ? parts[1].substring(0, 5) : timeStr.substring(0, 5);
+
+    const d = new Date(cleanIso);
+
+    if (!isNaN(d.getTime())) {
+      if (currentBucket === '1d') {
+        const zi = String(d.getDate()).padStart(2, '0');
+        const luna = String(d.getMonth() + 1).padStart(2, '0');
+        return `${zi}/${luna}`;
+      }
+
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    return timeStr.substring(11, 16) || timeStr;
   };
 
   useEffect(() => {
     const fetchEnergyData = async () => {
+      setLoading(true);
       try {
         const { data: rawNodes } = await getNodeNames();
         const nodes = Array.isArray(rawNodes) ? rawNodes : (rawNodes?.nodes || []);
+        setAvailableNodes(nodes);
 
-        // 1. Date Agregate per Stație
-        const stationPromises = nodes.map(async (nodeName, index) => {
+        const targetNodes = selectedStation === 'ALL'
+          ? nodes
+          : nodes.filter(n => String(n) === String(selectedStation));
+
+        // 1. Date Agregate fix ("1d") per Stație pentru KPI-uri, BarChart și Tabel
+        const stationPromises = targetNodes.map(async (nodeName, index) => {
           try {
             const { data } = await getTelemetryData(
               nodeName,
               metrics,
-              "15m",
+              "1d",
               true,
               startTime,
               endTime
@@ -87,6 +109,7 @@ export default function EnergySustainability({ viewMode }) {
 
             return {
               id: index + 1,
+              node_name: nodeName,
               name: `gNB_${nodeName}`,
               voltage: +(voltage || 0).toFixed(2),
               power: +(power || 0).toFixed(2),
@@ -95,7 +118,7 @@ export default function EnergySustainability({ viewMode }) {
               energy: +(energy || 0).toFixed(4)
             };
           } catch (error) {
-            console.error(`Eroare pentru statia ${nodeName}:`, error);
+            console.error(`Eroare agregare pentru statia ${nodeName}:`, error);
             return null;
           }
         });
@@ -119,7 +142,7 @@ export default function EnergySustainability({ viewMode }) {
           .slice(0, 5)
           .map(({ name, power }) => ({ name, power }));
 
-        // 2. Date Neagregate pentru Graficul de Eficiență în Timp
+        // 2. Serie temporală pentru graficul de eficiență (folosește chartBucketSize)
         const trendMap = {};
         const addTrendVal = (t, key, val) => {
           if (!t) return;
@@ -127,12 +150,12 @@ export default function EnergySustainability({ viewMode }) {
           trendMap[t][key] += Number(val) || 0;
         };
 
-        for (const nodeName of nodes) {
+        for (const nodeName of targetNodes) {
           try {
             const { data } = await getTelemetryData(
               nodeName,
               ["RFM_Energy_Consumption", "DL_Traffic_Volume", "UL_Traffic_Volume"],
-              "15m",
+              chartBucketSize,
               false,
               startTime,
               endTime
@@ -172,7 +195,7 @@ export default function EnergySustainability({ viewMode }) {
             const eficienta = energyKwh > 0 ? trafficGb / energyKwh : 0;
 
             return {
-              time: formatDisplayTime(item.rawTime),
+              time: formatDisplayTime(item.rawTime, chartBucketSize),
               eficienta: +(eficienta || 0).toFixed(4),
               power: +(item.power || 0).toFixed(2),
               traffic: +(trafficGb || 0).toFixed(4)
@@ -197,29 +220,54 @@ export default function EnergySustainability({ viewMode }) {
     };
 
     fetchEnergyData();
-  }, []);
+  }, [selectedStation, chartBucketSize]);
 
-  if (loading) {
+  if (loading && !energyData) {
     return <p className="status-loading">Se încarcă datele energetice...</p>;
   }
 
   return (
-    <>
+    <div className="energy-page-wrapper">
+      {/* Selector Dropdown Stație */}
+      <div className="filters-header" style={{ marginBottom: '16px' }}>
+        <div className="filter-group">
+          <label htmlFor="energyStationSelect">Filtrează Stație:</label>
+          <select 
+            id="energyStationSelect"
+            value={selectedStation} 
+            onChange={(e) => setSelectedStation(e.target.value)}
+            className="filter-select"
+          >
+            <option value="ALL">Toate Stațiile (Overview General)</option>
+            {availableNodes.map((node) => (
+              <option key={node} value={node}>
+                gNB_{node}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {viewMode === 'grafic' ? (
         <div className="energy-container">
           <div className="energy-kpi-grid">
-            <TotalEnergyCard value={`${energyData?.totalEnergy ?? 0} kWh`} />
-            <AveragePowerCard value={`${energyData?.avgPower ?? 0} W`} />
-            <AverageVoltageCard value={`${energyData?.avgVoltage ?? 0} V`} />
-            <EnergyEfficiencyCard value={`${energyData?.efficiency ?? 0} GB/kWh`} />
+            <TotalEnergyCard value={energyData?.totalEnergy ?? 0} />
+            <AveragePowerCard value={energyData?.avgPower ?? 0} />
+            <AverageVoltageCard value={energyData?.avgVoltage ?? 0} />
+            <EnergyEfficiencyCard value={energyData?.efficiency ?? 0} />
           </div>
 
           <TopConsumersChart data={energyData?.topConsumersData ?? []} />
-          <EfficiencyTrendChart data={energyData?.efficiencyTrendData ?? []} />
+          <EfficiencyTrendChart 
+            data={energyData?.efficiencyTrendData ?? []} 
+            bucketSize={chartBucketSize}
+            onBucketChange={(val) => setChartBucketSize(val)}
+            selectedStation={selectedStation}
+          />
         </div>
       ) : (
         <EnergySustainabilityTable stationEnergyData={energyData?.stationEnergyData ?? []} />
       )}
-    </>
+    </div>
   );
 }

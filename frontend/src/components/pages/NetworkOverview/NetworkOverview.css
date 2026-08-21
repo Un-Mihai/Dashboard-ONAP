@@ -1,3 +1,48 @@
+.overview-page-wrapper {
+  display: grid;
+  gap: 20px;
+}
+
+/* Bara de filtrare granularitate timp */
+.filters-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px 20px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-group label {
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-select {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+  border-color: #58a6ff;
+}
+
 .overview-container {
   display: grid;
   gap: 20px;
@@ -37,11 +82,20 @@
 }
 
 .station-item {
+  position: relative;
   background-color: #0d1117;
   border-radius: 6px;
   padding: 12px;
   text-align: center;
   min-width: 0;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  user-select: none;
+}
+
+.station-item:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
 }
 
 .station-item-title {
@@ -56,6 +110,22 @@
 .station-item-sub {
   font-size: 12px;
   margin-top: 4px;
+}
+
+.station-alert-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #f85149;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Grafic */
@@ -104,6 +174,8 @@
 
 .status-loading {
   color: #8b949e;
+  text-align: center;
+  padding: 40px;
 }
 
 .status-error {

@@ -1,17 +1,95 @@
 .capacity-container {
-  padding: 20px;
-  background-color: #0d1117; /* Fundalul dark principal */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background-color: #0d1117;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: #c9d1d9;
 }
 
-/* Stil general pentru cardurile wrapper folosite în pagină */
+/* Antet Controale (Filtru Stație + Filtru Congestie Dinamic) */
+.capacity-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 5px;
+}
+
+.capacity-header-controls h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+/* Stiluri Dropdown & Filtru Grup */
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.filter-select {
+  background-color: #161b22;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+  border-color: #58a6ff;
+}
+
+/* Caseta Configurare Filtru Congestie */
+.congestion-filter-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  padding: 5px 12px;
+  border-radius: 6px;
+  transition: border-color 0.2s ease;
+}
+
+.congestion-filter-box:hover {
+  border-color: #8b949e;
+}
+
+.congestion-filter-box input[type="checkbox"] {
+  accent-color: #238636;
+  width: 15px;
+  height: 15px;
+}
+
+.congestion-filter-box input[type="number"] {
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.congestion-filter-box input[type="number"]:focus {
+  border-color: #58a6ff;
+}
+
+/* Carduri & Wrapper-e */
 .capacity-card {
   background-color: #161b22;
   border: 1px solid #30363d;
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 20px;
+  border-radius: 8px;
+  padding: 20px;
 }
 
 .capacity-card h3 {

@@ -1,11 +1,13 @@
 import React from 'react';
 import './EnergyEfficiencyCard.css';
 
-export default function EnergyEfficiencyCard({ value = "3.2 GB/kWh" }) {
+export default function EnergyEfficiencyCard({ value = 0 }) {
+  const displayValue = typeof value === 'number' ? `${value} GB/kWh` : value;
+
   return (
     <div className="energy-card energy-efficiency-card">
       <h4>Eficiență (GB / kWh)</h4>
-      <p className="kpi-value success">{value}</p>
+      <p className="kpi-value success">{displayValue}</p>
     </div>
   );
 }

@@ -67,7 +67,11 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function CapacityChartsGrid() {
+export default function CapacityChartsGrid({ 
+  selectedStation = 'ALL', 
+  bucketSize = '15m', 
+  onBucketChange 
+}) {
   const [throughputTrendData, setThroughputTrendData] = useState([]);
   const [prbTrendData, setPrbTrendData] = useState([]);
 
@@ -78,15 +82,29 @@ export default function CapacityChartsGrid() {
     return item.bucket_time || item.time || item.timestamp || item.period_start_time || "";
   };
 
-  const formatDisplayTime = (timeStr) => {
+  const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) return "";
-    const cleanStr = timeStr.replace(" ", "T");
-    const d = new Date(cleanStr);
-    if (!isNaN(d.getTime())) {
-      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+    let cleanIso = timeStr.trim().replace(" ", "T");
+    if (!cleanIso.endsWith("Z") && !cleanIso.includes("+")) {
+      cleanIso += "Z";
     }
-    const parts = timeStr.split(/[\sT]/);
-    return parts[1] ? parts[1].substring(0, 5) : timeStr.substring(0, 5);
+
+    const d = new Date(cleanIso);
+
+    if (!isNaN(d.getTime())) {
+      if (currentBucket === '1d') {
+        const zi = String(d.getDate()).padStart(2, '0');
+        const luna = String(d.getMonth() + 1).padStart(2, '0');
+        return `${zi}/${luna}`;
+      }
+
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    return timeStr.substring(11, 16) || timeStr;
   };
 
   useEffect(() => {
@@ -95,31 +113,14 @@ export default function CapacityChartsGrid() {
         const nodesResponse = await getNodeNames();
         const rawNodes = nodesResponse.data;
         const nodes = Array.isArray(rawNodes) ? rawNodes : (rawNodes?.nodes || []);
-        const targetNode = nodes[0] || "43618";
+        
+        const targetNodes = selectedStation === 'ALL'
+          ? nodes
+          : nodes.filter(n => String(n) === String(selectedStation));
 
-        const response = await getTelemetryData(
-          targetNode,
-          [
-            "DL_Throughput",
-            "UL_Throughput",
-            "PRB_DL",
-            "Peak_PRB"
-          ],
-          "15m",
-          false,
-          startTime,
-          endTime
-        );
-
-        const data = response.data || {};
-
-        const dlData = Array.isArray(data["DL_Throughput"]) ? data["DL_Throughput"] : [];
-        const ulData = Array.isArray(data["UL_Throughput"]) ? data["UL_Throughput"] : [];
-        const prbDlData = Array.isArray(data["PRB_DL"]) ? data["PRB_DL"] : [];
-        const peakPrbData = Array.isArray(data["Peak_PRB"]) ? data["Peak_PRB"] : [];
-
-        // 1. Mapare Throughput DL vs UL
         const throughputMap = {};
+        const prbMap = {};
+
         const getOrCreateThroughput = (t) => {
           if (!throughputMap[t]) {
             throughputMap[t] = { rawTime: t, dlMbps: 0, ulMbps: 0 };
@@ -127,81 +128,114 @@ export default function CapacityChartsGrid() {
           return throughputMap[t];
         };
 
-        dlData.forEach(item => {
-          const t = extractTime(item);
-          if (!t) return;
-          const entry = getOrCreateThroughput(t);
-          entry.dlMbps = Number(item.DL_Throughput ?? item.value ?? 0);
-        });
+        const getOrCreatePrb = (t) => {
+          if (!prbMap[t]) {
+            prbMap[t] = { rawTime: t, prbDl: 0, peakPrb: 0, count: 0 };
+          }
+          return prbMap[t];
+        };
 
-        ulData.forEach(item => {
-          const t = extractTime(item);
-          if (!t) return;
-          const entry = getOrCreateThroughput(t);
-          entry.ulMbps = Number(item.UL_Throughput ?? item.value ?? 0);
-        });
+        for (const node of targetNodes) {
+          const response = await getTelemetryData(
+            node,
+            ["DL_Throughput", "UL_Throughput", "PRB_DL", "Peak_PRB"],
+            bucketSize,
+            false,
+            startTime,
+            endTime
+          );
+
+          const data = response.data || {};
+          const dlData = Array.isArray(data["DL_Throughput"]) ? data["DL_Throughput"] : [];
+          const ulData = Array.isArray(data["UL_Throughput"]) ? data["UL_Throughput"] : [];
+          const prbDlData = Array.isArray(data["PRB_DL"]) ? data["PRB_DL"] : [];
+          const peakPrbData = Array.isArray(data["Peak_PRB"]) ? data["Peak_PRB"] : [];
+
+          dlData.forEach(item => {
+            const t = extractTime(item);
+            if (!t) return;
+            const entry = getOrCreateThroughput(t);
+            entry.dlMbps += Number(item.DL_Throughput ?? item.value ?? 0);
+          });
+
+          ulData.forEach(item => {
+            const t = extractTime(item);
+            if (!t) return;
+            const entry = getOrCreateThroughput(t);
+            entry.ulMbps += Number(item.UL_Throughput ?? item.value ?? 0);
+          });
+
+          prbDlData.forEach(item => {
+            const t = extractTime(item);
+            if (!t) return;
+            const entry = getOrCreatePrb(t);
+            entry.prbDl += Number(item.PRB_DL ?? item.value ?? 0);
+            entry.count += 1;
+          });
+
+          peakPrbData.forEach(item => {
+            const t = extractTime(item);
+            if (!t) return;
+            const entry = getOrCreatePrb(t);
+            const val = Number(item.Peak_PRB ?? item.value ?? 0);
+            if (val > entry.peakPrb) entry.peakPrb = val;
+          });
+        }
 
         const formattedThroughputData = Object.values(throughputMap)
           .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
           .map(item => ({
-            time: formatDisplayTime(item.rawTime),
+            time: formatDisplayTime(item.rawTime, bucketSize),
             dlMbps: +(item.dlMbps || 0).toFixed(2),
             ulMbps: +(item.ulMbps || 0).toFixed(2)
           }));
 
         setThroughputTrendData(formattedThroughputData);
 
-        // 2. Mapare Grad de Ocupare Resurse (PRB DL vs Peak)
-        const prbMap = {};
-        const getOrCreatePrb = (t) => {
-          if (!prbMap[t]) {
-            prbMap[t] = { rawTime: t, prbDl: 0, peakPrb: 0 };
-          }
-          return prbMap[t];
-        };
-
-        prbDlData.forEach(item => {
-          const t = extractTime(item);
-          if (!t) return;
-          const entry = getOrCreatePrb(t);
-          entry.prbDl = Number(item.PRB_DL ?? item.value ?? 0);
-        });
-
-        peakPrbData.forEach(item => {
-          const t = extractTime(item);
-          if (!t) return;
-          const entry = getOrCreatePrb(t);
-          entry.peakPrb = Number(item.Peak_PRB ?? item.value ?? 0);
-        });
-
         const formattedPrbData = Object.values(prbMap)
           .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
           .map(item => ({
-            time: formatDisplayTime(item.rawTime),
-            prbDl: +(item.prbDl || 0).toFixed(2),
+            time: formatDisplayTime(item.rawTime, bucketSize),
+            prbDl: +(item.count ? item.prbDl / item.count : item.prbDl || 0).toFixed(2),
             peakPrb: +(item.peakPrb || 0).toFixed(2)
           }));
 
         setPrbTrendData(formattedPrbData);
 
       } catch (error) {
-        console.error("Eroare la încărcarea graficelor:", error);
+        console.error("Eroare la încărcarea graficelor de capacitate:", error);
       }
     };
 
     fetchChartData();
-  }, []);
+  }, [selectedStation, bucketSize]);
 
   return (
     <div className="capacity-charts-grid">
       <div className="capacity-card">
-        <h3>Evoluție Throughput DL vs. UL (KB/s)</h3>
+        <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL (KB/s)</h3>
+          {onBucketChange && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
+              <select 
+                value={bucketSize} 
+                onChange={(e) => onBucketChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="15m">15m</option>
+                <option value="1h">1h</option>
+                <option value="1d">1d</option>
+              </select>
+            </div>
+          )}
+        </div>
         <div className="chart-box-280">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={throughputTrendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
               <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" />
+              <YAxis stroke="#8b949e" unit=" KB/s" />
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#161b22',
@@ -231,13 +265,29 @@ export default function CapacityChartsGrid() {
       </div>
 
       <div className="capacity-card">
-        <h3>Grad de Ocupare Resurse (PRB DL % vs Peak)</h3>
+        <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 style={{ margin: 0 }}>Grad de Ocupare Resurse (PRB DL % vs Peak)</h3>
+          {onBucketChange && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
+              <select 
+                value={bucketSize} 
+                onChange={(e) => onBucketChange(e.target.value)}
+                className="filter-select"
+              >
+                <option value="15m">15m</option>
+                <option value="1h">1h</option>
+                <option value="1d">1d</option>
+              </select>
+            </div>
+          )}
+        </div>
         <div className="chart-box-280">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={prbTrendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
               <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" domain={[0, 100]} />
+              <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
               <Area
