@@ -21,8 +21,10 @@ export default function StationDetails() {
   const [isComparing, setIsComparing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const startTime = "2026-08-02T00:00:00+03:00";
-  const endTime = "2026-08-04T00:00:00+03:00";
+  // Perioada si granularitatea selectate de utilizator
+  const [startTime, setStartTime] = useState("2026-08-02T00:00");
+  const [endTime, setEndTime] = useState("2026-08-04T00:00");
+  const [bucketSize, setBucketSize] = useState("1h");
 
   // IMPORTANT:
   // Acestea sunt numele metricilor definite in metric_data.py
@@ -32,6 +34,13 @@ export default function StationDetails() {
     "DL_Traffic_Volume",
     "UL_Traffic_Volume"
   ];
+
+  // Adauga timezone-ul local pentru API
+  const formatTimeForApi = (time) => {
+    if (!time) return '';
+
+    return `${time}:00+03:00`;
+  };
 
   // Incarca lista de statii
   useEffect(() => {
@@ -70,10 +79,10 @@ export default function StationDetails() {
         const { data } = await getTelemetryData(
           selectedGnb,
           metrics,
-          "1d",
+          bucketSize,
           true,
-          startTime,
-          endTime
+          formatTimeForApi(startTime),
+          formatTimeForApi(endTime)
         );
 
         console.log("STATION API:", data);
@@ -86,8 +95,12 @@ export default function StationDetails() {
 
         const power = getValue("RFM_Energy_Consumption");
         const voltage = getValue("RFM_Energy_Monitoring");
-        const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
-        const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
+
+        const dlGb =
+          getValue("DL_Traffic_Volume") / (1024 ** 3);
+
+        const ulGb =
+          getValue("UL_Traffic_Volume") / (1024 ** 3);
 
         const kwh = power / 1000;
 
@@ -128,7 +141,13 @@ export default function StationDetails() {
     };
 
     loadStationData();
-  }, [selectedGnb]);
+
+  }, [
+    selectedGnb,
+    startTime,
+    endTime,
+    bucketSize
+  ]);
 
   // Incarca statia de comparatie
   useEffect(() => {
@@ -139,10 +158,10 @@ export default function StationDetails() {
         const { data } = await getTelemetryData(
           compareGnb,
           metrics,
-          "1d",
+          bucketSize,
           true,
-          startTime,
-          endTime
+          formatTimeForApi(startTime),
+          formatTimeForApi(endTime)
         );
 
         console.log("COMPARE API:", data);
@@ -153,8 +172,11 @@ export default function StationDetails() {
             data[metric]
           ) || 0;
 
-        const power = getValue("RFM_Energy_Consumption");
-        const voltage = getValue("RFM_Energy_Monitoring");
+        const power =
+          getValue("RFM_Energy_Consumption");
+
+        const voltage =
+          getValue("RFM_Energy_Monitoring");
 
         const dlGb =
           getValue("DL_Traffic_Volume") / (1024 ** 3);
@@ -199,7 +221,14 @@ export default function StationDetails() {
     };
 
     loadCompareData();
-  }, [compareGnb, isComparing]);
+
+  }, [
+    compareGnb,
+    isComparing,
+    startTime,
+    endTime,
+    bucketSize
+  ]);
 
   // Istoric pentru grafice
   useEffect(() => {
@@ -214,10 +243,10 @@ export default function StationDetails() {
             "PRB_DL",
             "Peak_PRB"
           ],
-          "1h",
+          bucketSize,
           false,
-          startTime,
-          endTime
+          formatTimeForApi(startTime),
+          formatTimeForApi(endTime)
         );
 
         console.log("HISTORY API:", data);
@@ -274,12 +303,28 @@ export default function StationDetails() {
                 peakPrbItem["Peak_PRB"]
               ) || 0;
 
+            let formattedTime = '';
+
+            if (rawTime) {
+              const date = new Date(
+                rawTime.replace(" ", "T")
+              );
+
+              if (!isNaN(date.getTime())) {
+                formattedTime =
+                  date.toLocaleString("ro-RO", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  });
+              }
+            }
+
             history.push({
               rawTime,
 
-              time: rawTime
-                ?.split(" ")[1]
-                ?.substring(0, 5),
+              time: formattedTime,
 
               power: +power.toFixed(2),
               prb: +prb.toFixed(2),
@@ -311,7 +356,13 @@ export default function StationDetails() {
     };
 
     loadHistory();
-  }, [selectedGnb]);
+
+  }, [
+    selectedGnb,
+    startTime,
+    endTime,
+    bucketSize
+  ]);
 
   const currentSt =
     stationsData[selectedGnb] || {
@@ -353,6 +404,7 @@ export default function StationDetails() {
 
       <StationHeader
         availableStations={availableStations}
+
         selectedGnb={selectedGnb}
         setSelectedGnb={setSelectedGnb}
 
@@ -361,6 +413,15 @@ export default function StationDetails() {
 
         isComparing={isComparing}
         setIsComparing={setIsComparing}
+
+        startTime={startTime}
+        setStartTime={setStartTime}
+
+        endTime={endTime}
+        setEndTime={setEndTime}
+
+        bucketSize={bucketSize}
+        setBucketSize={setBucketSize}
 
         currentSt={currentSt}
         handleExportPDF={handleExportPDF}

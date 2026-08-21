@@ -1,75 +1,218 @@
 import React from 'react';
 import './StationHeader.css';
 
-export default function StationHeader({ 
-  availableStations, selectedGnb, setSelectedGnb, 
-  compareGnb, setCompareGnb, isComparing, setIsComparing, 
-  currentSt, handleExportPDF 
+export default function StationHeader({
+  availableStations,
+  selectedGnb,
+  setSelectedGnb,
+
+  compareGnb,
+  setCompareGnb,
+
+  isComparing,
+  setIsComparing,
+
+  startTime,
+  setStartTime,
+
+  endTime,
+  setEndTime,
+
+  bucketSize,
+  setBucketSize,
+
+  currentSt,
+  handleExportPDF
 }) {
   return (
     <div className="station-card station-header">
-      <div style={{ display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+
+      {/* Partea stanga */}
+      <div className="station-header-left">
+
+        {/* Statia principala */}
         <div className="station-select-group">
-          <label htmlFor="gnb-select" style={{ color: '#8b949e', fontWeight: 'bold' }}>Stație Principală:</label>
-          <select 
+          <label
+            htmlFor="gnb-select"
+            className="station-label"
+          >
+            Stație Principală:
+          </label>
+
+          <select
             id="gnb-select"
             className="station-select"
             value={selectedGnb}
-            onChange={(e) => setSelectedGnb(e.target.value)}
+            onChange={(e) =>
+              setSelectedGnb(e.target.value)
+            }
           >
             {availableStations.map((st) => (
-              <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
+              <option
+                key={st.id}
+                value={st.id}
+              >
+                {st.id} - {st.name}
+              </option>
             ))}
           </select>
         </div>
 
+        {/* Statia de comparatie */}
         {isComparing && (
           <div className="station-select-group">
-            <label htmlFor="gnb-compare-select" style={{ color: '#d29922', fontWeight: 'bold' }}>Compară cu:</label>
-            <select 
+
+            <label
+              htmlFor="gnb-compare-select"
+              className="station-label compare-label"
+            >
+              Compară cu:
+            </label>
+
+            <select
               id="gnb-compare-select"
               className="station-select"
               value={compareGnb}
-              onChange={(e) => setCompareGnb(e.target.value)}
+              onChange={(e) =>
+                setCompareGnb(e.target.value)
+              }
             >
-              {availableStations.filter(st => st.id !== selectedGnb).map((st) => (
-                <option key={st.id} value={st.id}>{st.id} - {st.name}</option>
-              ))}
+              {availableStations
+                .filter(st => st.id !== selectedGnb)
+                .map((st) => (
+                  <option
+                    key={st.id}
+                    value={st.id}
+                  >
+                    {st.id} - {st.name}
+                  </option>
+                ))}
             </select>
+
           </div>
         )}
+
+        {/* Perioada */}
+        <div className="station-select-group">
+
+          <label
+            htmlFor="start-time"
+            className="station-label"
+          >
+            De la:
+          </label>
+
+          <input
+            id="start-time"
+            type="datetime-local"
+            className="station-input"
+            value={startTime}
+            onChange={(e) =>
+              setStartTime(e.target.value)
+            }
+          />
+
+        </div>
+
+        <div className="station-select-group">
+
+          <label
+            htmlFor="end-time"
+            className="station-label"
+          >
+            Până la:
+          </label>
+
+          <input
+            id="end-time"
+            type="datetime-local"
+            className="station-input"
+            value={endTime}
+            onChange={(e) =>
+              setEndTime(e.target.value)
+            }
+          />
+
+        </div>
+
+        {/* Granularitate */}
+        <div className="station-select-group">
+
+          <label
+            htmlFor="bucket-select"
+            className="station-label"
+          >
+            Granularitate:
+          </label>
+
+          <select
+            id="bucket-select"
+            className="station-select"
+            value={bucketSize}
+            onChange={(e) =>
+              setBucketSize(e.target.value)
+            }
+          >
+            <option value="15m">
+              15 Minute (15m)
+            </option>
+
+            <option value="1h">
+              1 Oră (1h)
+            </option>
+
+            <option value="1d">
+              1 Zi (1d)
+            </option>
+          </select>
+
+        </div>
+
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <button 
-          onClick={() => setIsComparing(!isComparing)}
-          style={{
-            backgroundColor: isComparing ? '#d29922' : '#21262d',
-            color: isComparing ? '#0d1117' : '#c9d1d9',
-            border: '1px solid #30363d', padding: '8px 14px', borderRadius: '6px',
-            cursor: 'pointer', fontWeight: 'bold', fontSize: '13px'
-          }}
+      {/* Partea dreapta */}
+      <div className="station-header-right">
+
+        <button
+          onClick={() =>
+            setIsComparing(!isComparing)
+          }
+          className={
+            isComparing
+              ? "station-button compare-active"
+              : "station-button compare-button"
+          }
         >
-          {isComparing ? 'Închide Comparația' : 'Compară Stații'}
+          {isComparing
+            ? 'Închide Comparația'
+            : 'Compară Stații'}
         </button>
 
-        <button 
+        <button
           onClick={handleExportPDF}
-          style={{
-            backgroundColor: '#238636', color: 'white', border: 'none',
-            padding: '8px 14px', borderRadius: '6px', cursor: 'pointer',
-            fontWeight: 'bold', fontSize: '13px'
-          }}
+          className="station-button export-button"
         >
           Exportă Raport PDF
         </button>
 
         <div className="station-status-badges">
-          <span className={`badge ${currentSt.power > 0 ? 'online' : 'down'}`}>
-            {currentSt.power > 0 ? 'ONLINE' : 'OFFLINE'}
+
+          <span
+            className={`badge ${
+              currentSt.power > 0
+                ? 'online'
+                : 'down'
+            }`}
+          >
+            {currentSt.power > 0
+              ? 'ONLINE'
+              : 'OFFLINE'}
           </span>
+
         </div>
+
       </div>
+
     </div>
   );
 }
