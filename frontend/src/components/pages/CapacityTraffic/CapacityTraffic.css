@@ -8,20 +8,33 @@
   color: #c9d1d9;
 }
 
-/* Antet Controale (Filtru Stație + Filtru Congestie Dinamic) */
+/* Antet Controale (Filtru Stație + Interval Dată/Oră + Filtru Congestie) */
+.filters-header,
 .capacity-header-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 5px;
+  gap: 16px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px 20px;
 }
 
 .capacity-header-controls h2 {
   font-size: 20px;
   font-weight: 600;
   color: #c9d1d9;
+  margin: 0;
+}
+
+/* Grup Selectoare Dată și Oră */
+.date-picker-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 /* Stiluri Dropdown & Filtru Grup */
@@ -34,10 +47,11 @@
 .filter-group label {
   color: #8b949e;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .filter-select {
-  background-color: #161b22;
+  background-color: #0d1117;
   color: #c9d1d9;
   border: 1px solid #30363d;
   padding: 6px 12px;
@@ -53,12 +67,31 @@
   border-color: #58a6ff;
 }
 
+/* Câmpuri Dată și Oră */
+.filter-input-date {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  color-scheme: dark;
+}
+
+.filter-input-date:hover,
+.filter-input-date:focus {
+  border-color: #58a6ff;
+}
+
 /* Caseta Configurare Filtru Congestie */
 .congestion-filter-box {
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #161b22;
+  background-color: #0d1117;
   border: 1px solid #30363d;
   padding: 5px 12px;
   border-radius: 6px;
@@ -73,6 +106,7 @@
   accent-color: #238636;
   width: 15px;
   height: 15px;
+  cursor: pointer;
 }
 
 .congestion-filter-box input[type="number"] {

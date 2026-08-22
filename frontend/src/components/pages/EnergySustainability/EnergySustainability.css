@@ -17,11 +17,23 @@
   color: #c9d1d9;
 }
 
-/* Bara de Filtre Dropdown */
+/* Bara de Filtre Antet (Stație + Interval Dată/Oră) */
 .filters-header {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px 20px;
+}
+
+.date-picker-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -34,6 +46,7 @@
 .filter-group label {
   color: #8b949e;
   font-size: 13px;
+  font-weight: 500;
 }
 
 .filter-select {
@@ -45,11 +58,30 @@
   font-size: 13px;
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s ease;
 }
 
 .filter-select:hover,
 .filter-select:focus {
+  border-color: #58a6ff;
+}
+
+/* Câmpuri Dată și Oră */
+.filter-input-date {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  color-scheme: dark;
+}
+
+.filter-input-date:hover,
+.filter-input-date:focus {
   border-color: #58a6ff;
 }
 

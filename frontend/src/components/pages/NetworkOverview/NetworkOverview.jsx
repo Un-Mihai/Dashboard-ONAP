@@ -19,15 +19,23 @@ export default function NetworkOverview({ viewMode }) {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Stare selecție stație + granularitate grafic
+  // Selector stație + granularitate pe grafic
   const [selectedStation, setSelectedStation] = useState('ALL');
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  const startTime = "2026-07-28T00:00:00+03:00";
-  const endTime = "2026-07-28T23:59:59+03:00";
+  // Interval dinamic de date (implicit intervalul activ din BD)
+  const [startDate, setStartDate] = useState("2026-07-28");
+  const [startTime, setStartTime] = useState("00:00");
+  const [endDate, setEndDate] = useState("2026-07-28");
+  const [endTime, setEndTime] = useState("23:59");
+
+  // Formatare parametri ISO pentru FastAPI
+  const startIso = `${startDate}T${startTime}:00+03:00`;
+  const endIso = `${endDate}T${endTime}:59+03:00`;
 
   const metricsList = [
+    "Cell_Availability",
     "RFM_Energy_Consumption",
     "DL_Traffic_Volume",
     "UL_Traffic_Volume"
@@ -89,6 +97,7 @@ export default function NetworkOverview({ viewMode }) {
 
         let totalTraffic = 0;
         let totalPower = 0;
+        let totalAvailSum = 0;
         const stations = [];
         const history = {};
 
@@ -102,14 +111,15 @@ export default function NetworkOverview({ viewMode }) {
               metricsList,
               "1d",
               true,
-              startTime,
-              endTime
+              startIso,
+              endIso
             );
 
             const aggData = resAgg.data || {};
             const power = extractVal(aggData, "RFM_Energy_Consumption");
             const dl = extractVal(aggData, "DL_Traffic_Volume");
             const ul = extractVal(aggData, "UL_Traffic_Volume");
+            const availability = extractVal(aggData, "Cell_Availability") || (power > 0 || dl > 0 ? 100 : 0);
 
             const dlGb = dl / (1024 ** 3);
             const ulGb = ul / (1024 ** 3);
@@ -117,15 +127,16 @@ export default function NetworkOverview({ viewMode }) {
 
             totalTraffic += traffic;
             totalPower += power;
+            totalAvailSum += availability;
 
             stations.push({
               id: i + 1,
               node_name: node,
               name: `gNB_${node}`,
-              availability: power > 0 || traffic > 0 ? 100 : 0,
+              availability: +(availability || 0).toFixed(1),
               traffic: +(traffic || 0).toFixed(2),
               power: +(power || 0).toFixed(2),
-              active_alarms: power === 0 && traffic === 0 ? 1 : 0
+              active_alarms: availability < 100 ? 1 : 0
             });
 
             // 2. Serie temporală pentru grafic
@@ -134,8 +145,8 @@ export default function NetworkOverview({ viewMode }) {
               metricsList,
               chartBucketSize,
               false,
-              startTime,
-              endTime
+              startIso,
+              endIso
             );
 
             const seriesData = resSeries.data || {};
@@ -165,7 +176,7 @@ export default function NetworkOverview({ viewMode }) {
         }
 
         const avgAvail = stations.length 
-          ? +(stations.reduce((acc, s) => acc + s.availability, 0) / stations.length).toFixed(1)
+          ? +(totalAvailSum / stations.length).toFixed(1)
           : 0;
 
         setNetworkData({
@@ -177,7 +188,13 @@ export default function NetworkOverview({ viewMode }) {
         });
 
         const chartPoints = Object.values(history)
-          .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
+          .sort((a, b) => {
+            let tA = a.rawTime.trim().replace(" ", "T");
+            let tB = b.rawTime.trim().replace(" ", "T");
+            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
+            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
+            return new Date(tA) - new Date(tB);
+          })
           .map(item => ({
             time: formatDisplayTime(item.rawTime, chartBucketSize),
             trafic: +(item.trafic || 0).toFixed(2),
@@ -194,13 +211,13 @@ export default function NetworkOverview({ viewMode }) {
     };
 
     loadAllOverviewData();
-  }, [selectedStation, chartBucketSize]);
+  }, [selectedStation, chartBucketSize, startDate, startTime, endDate, endTime]);
 
   if (loading && !networkData) return <p className="status-loading">Se încarcă datele din rețea...</p>;
 
   return (
     <div className="overview-page-wrapper">
-      {/* Selector Dropdown Stație */}
+      {/* Bara de Controale: Stație + Interval Dată/Oră */}
       <div className="filters-header">
         <div className="filter-group">
           <label htmlFor="stationSelect">Filtrează Stație:</label>
@@ -217,6 +234,40 @@ export default function NetworkOverview({ viewMode }) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="date-picker-group">
+          <div className="filter-group">
+            <label>De la:</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="filter-input-date"
+            />
+            <input 
+              type="time" 
+              value={startTime} 
+              onChange={(e) => setStartTime(e.target.value)}
+              className="filter-input-date"
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>Până la:</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="filter-input-date"
+            />
+            <input 
+              type="time" 
+              value={endTime} 
+              onChange={(e) => setEndTime(e.target.value)}
+              className="filter-input-date"
+            />
+          </div>
         </div>
       </div>
 

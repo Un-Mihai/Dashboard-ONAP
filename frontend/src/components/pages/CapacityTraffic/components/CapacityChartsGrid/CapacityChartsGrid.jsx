@@ -70,13 +70,12 @@ const CustomTooltip = ({ active, payload, label }) => {
 export default function CapacityChartsGrid({ 
   selectedStation = 'ALL', 
   bucketSize = '15m', 
-  onBucketChange 
+  onBucketChange,
+  startTime = "2026-07-28T00:00:00+03:00",
+  endTime = "2026-07-28T23:59:59+03:00"
 }) {
   const [throughputTrendData, setThroughputTrendData] = useState([]);
   const [prbTrendData, setPrbTrendData] = useState([]);
-
-  const startTime = "2026-07-28T00:00:00+03:00";
-  const endTime = "2026-07-28T23:59:59+03:00";
 
   const extractTime = (item) => {
     return item.bucket_time || item.time || item.timestamp || item.period_start_time || "";
@@ -183,7 +182,13 @@ export default function CapacityChartsGrid({
         }
 
         const formattedThroughputData = Object.values(throughputMap)
-          .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
+          .sort((a, b) => {
+            let tA = a.rawTime.trim().replace(" ", "T");
+            let tB = b.rawTime.trim().replace(" ", "T");
+            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
+            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
+            return new Date(tA) - new Date(tB);
+          })
           .map(item => ({
             time: formatDisplayTime(item.rawTime, bucketSize),
             dlMbps: +(item.dlMbps || 0).toFixed(2),
@@ -193,7 +198,13 @@ export default function CapacityChartsGrid({
         setThroughputTrendData(formattedThroughputData);
 
         const formattedPrbData = Object.values(prbMap)
-          .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
+          .sort((a, b) => {
+            let tA = a.rawTime.trim().replace(" ", "T");
+            let tB = b.rawTime.trim().replace(" ", "T");
+            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
+            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
+            return new Date(tA) - new Date(tB);
+          })
           .map(item => ({
             time: formatDisplayTime(item.rawTime, bucketSize),
             prbDl: +(item.count ? item.prbDl / item.count : item.prbDl || 0).toFixed(2),
@@ -208,7 +219,7 @@ export default function CapacityChartsGrid({
     };
 
     fetchChartData();
-  }, [selectedStation, bucketSize]);
+  }, [selectedStation, bucketSize, startTime, endTime]);
 
   return (
     <div className="capacity-charts-grid">

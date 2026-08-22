@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { getNodeNames, getTelemetryData } from "../../../../../api";
 import './CapacityKpiGrid.css';
 
-export default function CapacityKpiGrid({ selectedStation = 'ALL' }) {
+export default function CapacityKpiGrid({ 
+  selectedStation = 'ALL',
+  startTime = "2026-07-28T00:00:00+03:00",
+  endTime = "2026-07-28T23:59:59+03:00"
+}) {
   const [kpis, setKpis] = useState([
     { title: "DL Throughput Mediu", value: "Se încarcă...", type: "" },
     { title: "UL Throughput Mediu", value: "Se încarcă...", type: "" },
     { title: "PRB DL Mediu %", value: "Se încarcă...", type: "" },
     { title: "Peak PRB Slot Max %", value: "Se încarcă...", type: "" }
   ]);
-
-  const startTime = "2026-07-28T00:00:00+03:00";
-  const endTime = "2026-07-28T23:59:59+03:00";
 
   const extractVal = (data, key) => {
     if (!data || data[key] === undefined || data[key] === null) return 0;
@@ -108,7 +109,7 @@ export default function CapacityKpiGrid({ selectedStation = 'ALL' }) {
     };
 
     fetchKpis();
-  }, [selectedStation]);
+  }, [selectedStation, startTime, endTime]);
 
   return (
     <div className="capacity-kpi-grid">

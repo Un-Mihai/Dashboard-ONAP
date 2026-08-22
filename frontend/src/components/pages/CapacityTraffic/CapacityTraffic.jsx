@@ -11,16 +11,22 @@ export default function CapacityTraffic({ viewMode }) {
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
+  // Interval dinamic de date (implicit intervalul activ din BD)
+  const [startDate, setStartDate] = useState("2026-07-28");
+  const [startTime, setStartTime] = useState("00:00");
+  const [endDate, setEndDate] = useState("2026-07-28");
+  const [endTime, setEndTime] = useState("23:59");
+
+  // Formatare parametri ISO pentru FastAPI
+  const startIso = `${startDate}T${startTime}:00+03:00`;
+  const endIso = `${endDate}T${endTime}:59+03:00`;
+
   // Filtrare dinamică congestie setată de utilizator
   const [enableCongestionFilter, setEnableCongestionFilter] = useState(false);
   const [congestionThreshold, setCongestionThreshold] = useState(75);
 
   const [stationsData, setStationsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Intervalul real din baza de date SQL
-  const startTime = "2026-07-28T00:00:00+03:00";
-  const endTime = "2026-07-28T23:59:59+03:00";
 
   const metrics = [
     "DL_Throughput",
@@ -63,8 +69,8 @@ export default function CapacityTraffic({ viewMode }) {
               metrics,
               "1d",
               true,
-              startTime,
-              endTime
+              startIso,
+              endIso
             );
 
             const data = res.data || {};
@@ -103,7 +109,7 @@ export default function CapacityTraffic({ viewMode }) {
     };
 
     fetchTableData();
-  }, [selectedStation]);
+  }, [selectedStation, startDate, startTime, endDate, endTime]);
 
   // Aplicare filtru prag definit de utilizator
   const displayedStations = enableCongestionFilter
@@ -112,67 +118,99 @@ export default function CapacityTraffic({ viewMode }) {
 
   return (
     <div className="capacity-container">
-      {/* Antet Filtre: Dropdown Stație + Configurator Filtru Congestie */}
-      <div className="capacity-header-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '10px' }}>
-        <h2 style={{ margin: 0, color: '#c9d1d9' }}>
-          Capacity & Traffic Management
-        </h2>
+      {/* Antet Filtre: Selector Stație + Interval Dată/Oră + Filtru Congestie */}
+      <div className="filters-header">
+        <div className="filter-group">
+          <label htmlFor="capStationSelect">Filtrează Stație:</label>
+          <select 
+            id="capStationSelect"
+            value={selectedStation} 
+            onChange={(e) => setSelectedStation(e.target.value)}
+            className="filter-select"
+          >
+            <option value="ALL">Toate Stațiile (Overview General)</option>
+            {availableNodes.map((node) => (
+              <option key={node} value={node}>
+                gNB_{node}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          {/* Selector Stație */}
-          <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label htmlFor="capStationSelect" style={{ color: '#8b949e', fontSize: '13px' }}>Filtrează Stație:</label>
-            <select 
-              id="capStationSelect"
-              value={selectedStation} 
-              onChange={(e) => setSelectedStation(e.target.value)}
-              className="filter-select"
-            >
-              <option value="ALL">Toate Stațiile (Overview General)</option>
-              {availableNodes.map((node) => (
-                <option key={node} value={node}>
-                  gNB_{node}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Configurator Filtru Congestie Dinamic */}
-          <div className="congestion-filter-box" style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#161b22', padding: '6px 12px', borderRadius: '6px', border: '1px solid #30363d' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: '#c9d1d9' }}>
-              <input 
-                type="checkbox" 
-                checked={enableCongestionFilter}
-                onChange={(e) => setEnableCongestionFilter(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              Filtru Congestie PRB &ge;
-            </label>
+        {/* Câmpuri De la / Până la */}
+        <div className="date-picker-group">
+          <div className="filter-group">
+            <label>De la:</label>
             <input 
-              type="number"
-              min="0"
-              max="100"
-              value={congestionThreshold}
-              onChange={(e) => setCongestionThreshold(e.target.value)}
-              disabled={!enableCongestionFilter}
-              style={{
-                width: '55px',
-                background: '#0d1117',
-                border: '1px solid #30363d',
-                color: '#c9d1d9',
-                borderRadius: '4px',
-                padding: '3px 6px',
-                textAlign: 'center',
-                fontSize: '13px',
-                opacity: enableCongestionFilter ? 1 : 0.5
-              }}
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="filter-input-date"
             />
-            <span style={{ fontSize: '13px', color: '#8b949e' }}>%</span>
+            <input 
+              type="time" 
+              value={startTime} 
+              onChange={(e) => setStartTime(e.target.value)}
+              className="filter-input-date"
+            />
           </div>
+
+          <div className="filter-group">
+            <label>Până la:</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="filter-input-date"
+            />
+            <input 
+              type="time" 
+              value={endTime} 
+              onChange={(e) => setEndTime(e.target.value)}
+              className="filter-input-date"
+            />
+          </div>
+        </div>
+
+        {/* Filtru Prag Congestie */}
+        <div className="congestion-filter-box">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', color: '#c9d1d9' }}>
+            <input 
+              type="checkbox" 
+              checked={enableCongestionFilter} 
+              onChange={(e) => setEnableCongestionFilter(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />
+            Filtru Congestie PRB &ge;
+          </label>
+          <input 
+            type="number"
+            min="0"
+            max="100"
+            value={congestionThreshold}
+            onChange={(e) => setCongestionThreshold(e.target.value)}
+            disabled={!enableCongestionFilter}
+            style={{
+              width: '55px',
+              background: '#0d1117',
+              border: '1px solid #30363d',
+              color: '#c9d1d9',
+              borderRadius: '4px',
+              padding: '3px 6px',
+              textAlign: 'center',
+              fontSize: '13px',
+              opacity: enableCongestionFilter ? 1 : 0.5
+            }}
+          />
+          <span style={{ fontSize: '13px', color: '#8b949e' }}>%</span>
         </div>
       </div>
 
-      <CapacityKpiGrid selectedStation={selectedStation} />
+      <CapacityKpiGrid 
+        selectedStation={selectedStation} 
+        startTime={startIso} 
+        endTime={endIso} 
+      />
 
       {viewMode === 'grafic' ? (
         <>
@@ -180,6 +218,8 @@ export default function CapacityTraffic({ viewMode }) {
             selectedStation={selectedStation}
             bucketSize={chartBucketSize}
             onBucketChange={(val) => setChartBucketSize(val)}
+            startTime={startIso}
+            endTime={endIso}
           />
 
           <div className="capacity-card">

@@ -21,9 +21,15 @@ export default function EnergySustainability({ viewMode }) {
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  // Intervalul real din baza de date
-  const startTime = "2026-07-28T00:00:00+03:00";
-  const endTime = "2026-07-28T23:59:59+03:00";
+  // Interval dinamic de date (implicit intervalul activ din BD)
+  const [startDate, setStartDate] = useState("2026-07-28");
+  const [startTime, setStartTime] = useState("00:00");
+  const [endDate, setEndDate] = useState("2026-07-28");
+  const [endTime, setEndTime] = useState("23:59");
+
+  // Formatare parametri ISO pentru FastAPI
+  const startIso = `${startDate}T${startTime}:00+03:00`;
+  const endIso = `${endDate}T${endTime}:59+03:00`;
 
   const metrics = [
     "RFM_Energy_Consumption",
@@ -94,8 +100,8 @@ export default function EnergySustainability({ viewMode }) {
               metrics,
               "1d",
               true,
-              startTime,
-              endTime
+              startIso,
+              endIso
             );
 
             const power = extractVal(data, "RFM_Energy_Consumption");
@@ -142,7 +148,7 @@ export default function EnergySustainability({ viewMode }) {
           .slice(0, 5)
           .map(({ name, power }) => ({ name, power }));
 
-        // 2. Serie temporală pentru graficul de eficiență (folosește chartBucketSize)
+        // 2. Serie temporală pentru graficul de eficiență
         const trendMap = {};
         const addTrendVal = (t, key, val) => {
           if (!t) return;
@@ -157,8 +163,8 @@ export default function EnergySustainability({ viewMode }) {
               ["RFM_Energy_Consumption", "DL_Traffic_Volume", "UL_Traffic_Volume"],
               chartBucketSize,
               false,
-              startTime,
-              endTime
+              startIso,
+              endIso
             );
 
             const pArr = Array.isArray(data?.RFM_Energy_Consumption) ? data.RFM_Energy_Consumption : [];
@@ -188,7 +194,13 @@ export default function EnergySustainability({ viewMode }) {
         }
 
         const efficiencyTrendData = Object.values(trendMap)
-          .sort((a, b) => new Date(a.rawTime.replace(" ", "T")) - new Date(b.rawTime.replace(" ", "T")))
+          .sort((a, b) => {
+            let tA = a.rawTime.trim().replace(" ", "T");
+            let tB = b.rawTime.trim().replace(" ", "T");
+            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
+            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
+            return new Date(tA) - new Date(tB);
+          })
           .map(item => {
             const trafficGb = (item.dl + item.ul) / (1024 ** 3);
             const energyKwh = item.power / 1000;
@@ -220,7 +232,7 @@ export default function EnergySustainability({ viewMode }) {
     };
 
     fetchEnergyData();
-  }, [selectedStation, chartBucketSize]);
+  }, [selectedStation, chartBucketSize, startDate, startTime, endDate, endTime]);
 
   if (loading && !energyData) {
     return <p className="status-loading">Se încarcă datele energetice...</p>;
@@ -228,8 +240,8 @@ export default function EnergySustainability({ viewMode }) {
 
   return (
     <div className="energy-page-wrapper">
-      {/* Selector Dropdown Stație */}
-      <div className="filters-header" style={{ marginBottom: '16px' }}>
+      {/* Bara de Controale: Stație + Interval Dată/Oră */}
+      <div className="filters-header">
         <div className="filter-group">
           <label htmlFor="energyStationSelect">Filtrează Stație:</label>
           <select 
@@ -245,6 +257,40 @@ export default function EnergySustainability({ viewMode }) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="date-picker-group">
+          <div className="filter-group">
+            <label>De la:</label>
+            <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)}
+              className="filter-input-date"
+            />
+            <input 
+              type="time" 
+              value={startTime} 
+              onChange={(e) => setStartTime(e.target.value)}
+              className="filter-input-date"
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>Până la:</label>
+            <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)}
+              className="filter-input-date"
+            />
+            <input 
+              type="time" 
+              value={endTime} 
+              onChange={(e) => setEndTime(e.target.value)}
+              className="filter-input-date"
+            />
+          </div>
         </div>
       </div>
 
