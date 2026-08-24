@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+
 import {
   LineChart,
   Line,
@@ -12,24 +13,38 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-import { getNodeNames, getTelemetryData } from "../../../../../api";
+import {
+  getNodeNames,
+  getTelemetryData
+} from "../../../../../api";
+
 import './CapacityChartsGrid.css';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const peakValue = payload.find(p => p.dataKey === 'peakPrb')?.value;
+    const peakValue =
+      payload.find(p => p.dataKey === 'peakPrb')?.value;
+
     const isPeakAlert = peakValue >= 100;
 
     return (
       <div
         style={{
           backgroundColor: '#161b22',
-          border: `1px solid ${isPeakAlert ? '#da3633' : '#30363d'}`,
+          border: `1px solid ${
+            isPeakAlert ? '#da3633' : '#30363d'
+          }`,
           padding: '10px',
           borderRadius: '4px'
         }}
       >
-        <p style={{ margin: 0, color: '#8b949e', marginBottom: '5px' }}>
+        <p
+          style={{
+            margin: 0,
+            color: '#8b949e',
+            marginBottom: '5px'
+          }}
+        >
           {label}
         </p>
 
@@ -44,7 +59,10 @@ const CustomTooltip = ({ active, payload, label }) => {
             }}
           >
             {entry.name}: {Number(entry.value).toFixed(2)}
-            {entry.dataKey === 'prbDl' || entry.dataKey === 'peakPrb' ? '%' : ' KB/s'}
+            {entry.dataKey === 'prbDl' ||
+            entry.dataKey === 'peakPrb'
+              ? '%'
+              : ' KB/s'}
           </p>
         ))}
 
@@ -67,193 +85,520 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function CapacityChartsGrid({ 
-  selectedStation = 'ALL', 
-  bucketSize = '15m', 
+export default function CapacityChartsGrid({
+  selectedStation = 'ALL',
+  bucketSize = '15m',
   onBucketChange,
+
+  // Primim intervalul complet de la CapacityTraffic
   startTime = "2026-07-28T00:00:00+03:00",
   endTime = "2026-07-28T23:59:59+03:00"
 }) {
-  const [throughputTrendData, setThroughputTrendData] = useState([]);
-  const [prbTrendData, setPrbTrendData] = useState([]);
+
+  const [throughputTrendData, setThroughputTrendData] =
+    useState([]);
+
+  const [prbTrendData, setPrbTrendData] =
+    useState([]);
+
+  // =====================================================
+  // EXTRAGERE TIMP
+  // =====================================================
 
   const extractTime = (item) => {
-    return item.bucket_time || item.time || item.timestamp || item.period_start_time || "";
+    return (
+      item?.bucket_time ||
+      item?.time ||
+      item?.timestamp ||
+      item?.period_start_time ||
+      ""
+    );
   };
+
+  // =====================================================
+  // FORMATARE TIMP
+  // IMPORTANT:
+  // Nu folosim new Date() aici deoarece poate schimba
+  // ora prin conversia timezone.
+  // =====================================================
 
   const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) return "";
 
-    let cleanIso = timeStr.trim().replace(" ", "T");
-    if (!cleanIso.endsWith("Z") && !cleanIso.includes("+")) {
-      cleanIso += "Z";
-    }
+    const cleanTime = String(timeStr)
+      .trim()
+      .replace(" ", "T");
 
-    const d = new Date(cleanIso);
+    // Pentru granularitate zilnică
+    if (currentBucket === '1d') {
+      const datePart = cleanTime.split('T')[0];
 
-    if (!isNaN(d.getTime())) {
-      if (currentBucket === '1d') {
-        const zi = String(d.getDate()).padStart(2, '0');
-        const luna = String(d.getMonth() + 1).padStart(2, '0');
-        return `${zi}/${luna}`;
+      if (datePart) {
+        const parts = datePart.split('-');
+
+        if (parts.length >= 3) {
+          return `${parts[2]}/${parts[1]}`;
+        }
       }
 
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
+      return cleanTime.substring(0, 10);
     }
 
-    return timeStr.substring(11, 16) || timeStr;
+    // Luăm ora EXACT cum vine din backend
+    const timePart = cleanTime.split('T')[1];
+
+    if (timePart) {
+      return timePart.substring(0, 5);
+    }
+
+    return cleanTime.substring(11, 16) || cleanTime;
   };
 
+  // =====================================================
+  // SORTARE TIMP
+  // =====================================================
+
+  const sortByTime = (a, b) => {
+    const timeA = String(a.rawTime || '')
+      .trim()
+      .replace(' ', 'T');
+
+    const timeB = String(b.rawTime || '')
+      .trim()
+      .replace(' ', 'T');
+
+    return timeA.localeCompare(timeB);
+  };
+
+  // =====================================================
+  // ÎNCĂRCARE DATE GRAFICE
+  // =====================================================
+
   useEffect(() => {
+
     const fetchChartData = async () => {
+
       try {
-        const nodesResponse = await getNodeNames();
-        const rawNodes = nodesResponse.data;
-        const nodes = Array.isArray(rawNodes) ? rawNodes : (rawNodes?.nodes || []);
-        
-        const targetNodes = selectedStation === 'ALL'
-          ? nodes
-          : nodes.filter(n => String(n) === String(selectedStation));
+
+        // =================================================
+        // NODURI
+        // =================================================
+
+        const nodesResponse =
+          await getNodeNames();
+
+        const rawNodes =
+          nodesResponse.data;
+
+        const nodes =
+          Array.isArray(rawNodes)
+            ? rawNodes
+            : (rawNodes?.nodes || []);
+
+        // =================================================
+        // STAȚII SELECTATE
+        // =================================================
+
+        const targetNodes =
+          selectedStation === 'ALL'
+            ? nodes
+            : nodes.filter(
+                n =>
+                  String(n) ===
+                  String(selectedStation)
+              );
+
+        // =================================================
+        // MAP-URI PENTRU GRAFICE
+        // =================================================
 
         const throughputMap = {};
         const prbMap = {};
 
-        const getOrCreateThroughput = (t) => {
-          if (!throughputMap[t]) {
-            throughputMap[t] = { rawTime: t, dlMbps: 0, ulMbps: 0 };
+        const getOrCreateThroughput = (time) => {
+
+          if (!throughputMap[time]) {
+
+            throughputMap[time] = {
+              rawTime: time,
+              dlMbps: 0,
+              ulMbps: 0
+            };
+
           }
-          return throughputMap[t];
+
+          return throughputMap[time];
         };
 
-        const getOrCreatePrb = (t) => {
-          if (!prbMap[t]) {
-            prbMap[t] = { rawTime: t, prbDl: 0, peakPrb: 0, count: 0 };
+        const getOrCreatePrb = (time) => {
+
+          if (!prbMap[time]) {
+
+            prbMap[time] = {
+              rawTime: time,
+              prbDl: 0,
+              peakPrb: 0,
+              count: 0
+            };
+
           }
-          return prbMap[t];
+
+          return prbMap[time];
         };
+
+        // =================================================
+        // DATE PENTRU FIECARE STAȚIE
+        // =================================================
 
         for (const node of targetNodes) {
-          const response = await getTelemetryData(
-            node,
-            ["DL_Throughput", "UL_Throughput", "PRB_DL", "Peak_PRB"],
-            bucketSize,
-            false,
-            startTime,
-            endTime
-          );
 
-          const data = response.data || {};
-          const dlData = Array.isArray(data["DL_Throughput"]) ? data["DL_Throughput"] : [];
-          const ulData = Array.isArray(data["UL_Throughput"]) ? data["UL_Throughput"] : [];
-          const prbDlData = Array.isArray(data["PRB_DL"]) ? data["PRB_DL"] : [];
-          const peakPrbData = Array.isArray(data["Peak_PRB"]) ? data["Peak_PRB"] : [];
+          try {
 
-          dlData.forEach(item => {
-            const t = extractTime(item);
-            if (!t) return;
-            const entry = getOrCreateThroughput(t);
-            entry.dlMbps += Number(item.DL_Throughput ?? item.value ?? 0);
-          });
+            const response =
+              await getTelemetryData(
+                node,
 
-          ulData.forEach(item => {
-            const t = extractTime(item);
-            if (!t) return;
-            const entry = getOrCreateThroughput(t);
-            entry.ulMbps += Number(item.UL_Throughput ?? item.value ?? 0);
-          });
+                [
+                  "DL_Throughput",
+                  "UL_Throughput",
+                  "PRB_DL",
+                  "Peak_PRB"
+                ],
 
-          prbDlData.forEach(item => {
-            const t = extractTime(item);
-            if (!t) return;
-            const entry = getOrCreatePrb(t);
-            entry.prbDl += Number(item.PRB_DL ?? item.value ?? 0);
-            entry.count += 1;
-          });
+                bucketSize,
+                false,
 
-          peakPrbData.forEach(item => {
-            const t = extractTime(item);
-            if (!t) return;
-            const entry = getOrCreatePrb(t);
-            const val = Number(item.Peak_PRB ?? item.value ?? 0);
-            if (val > entry.peakPrb) entry.peakPrb = val;
-          });
+                startTime,
+                endTime
+              );
+
+            const data =
+              response.data || {};
+
+            // =============================================
+            // THROUGHPUT DL
+            // =============================================
+
+            const dlData =
+              Array.isArray(data["DL_Throughput"])
+                ? data["DL_Throughput"]
+                : [];
+
+            dlData.forEach(item => {
+
+              const t =
+                extractTime(item);
+
+              if (!t) return;
+
+              const entry =
+                getOrCreateThroughput(t);
+
+              const value =
+                Number(
+                  item.DL_Throughput ??
+                  item.value ??
+                  0
+                ) || 0;
+
+              entry.dlMbps += value;
+            });
+
+            // =============================================
+            // THROUGHPUT UL
+            // =============================================
+
+            const ulData =
+              Array.isArray(data["UL_Throughput"])
+                ? data["UL_Throughput"]
+                : [];
+
+            ulData.forEach(item => {
+
+              const t =
+                extractTime(item);
+
+              if (!t) return;
+
+              const entry =
+                getOrCreateThroughput(t);
+
+              const value =
+                Number(
+                  item.UL_Throughput ??
+                  item.value ??
+                  0
+                ) || 0;
+
+              entry.ulMbps += value;
+            });
+
+            // =============================================
+            // PRB DL
+            // =============================================
+
+            const prbDlData =
+              Array.isArray(data["PRB_DL"])
+                ? data["PRB_DL"]
+                : [];
+
+            prbDlData.forEach(item => {
+
+              const t =
+                extractTime(item);
+
+              if (!t) return;
+
+              const entry =
+                getOrCreatePrb(t);
+
+              const value =
+                Number(
+                  item.PRB_DL ??
+                  item.value ??
+                  0
+                ) || 0;
+
+              entry.prbDl += value;
+              entry.count += 1;
+            });
+
+            // =============================================
+            // PEAK PRB
+            // =============================================
+
+            const peakPrbData =
+              Array.isArray(data["Peak_PRB"])
+                ? data["Peak_PRB"]
+                : [];
+
+            peakPrbData.forEach(item => {
+
+              const t =
+                extractTime(item);
+
+              if (!t) return;
+
+              const entry =
+                getOrCreatePrb(t);
+
+              const value =
+                Number(
+                  item.Peak_PRB ??
+                  item.value ??
+                  0
+                ) || 0;
+
+              if (value > entry.peakPrb) {
+                entry.peakPrb = value;
+              }
+
+            });
+
+          } catch (error) {
+
+            console.error(
+              `Eroare la încărcarea datelor pentru stația ${node}:`,
+              error
+            );
+
+          }
+
         }
 
-        const formattedThroughputData = Object.values(throughputMap)
-          .sort((a, b) => {
-            let tA = a.rawTime.trim().replace(" ", "T");
-            let tB = b.rawTime.trim().replace(" ", "T");
-            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
-            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
-            return new Date(tA) - new Date(tB);
-          })
-          .map(item => ({
-            time: formatDisplayTime(item.rawTime, bucketSize),
-            dlMbps: +(item.dlMbps || 0).toFixed(2),
-            ulMbps: +(item.ulMbps || 0).toFixed(2)
-          }));
+        // =================================================
+        // GRAFIC THROUGHPUT
+        // =================================================
 
-        setThroughputTrendData(formattedThroughputData);
+        const formattedThroughputData =
+          Object.values(throughputMap)
+            .sort(sortByTime)
+            .map(item => ({
 
-        const formattedPrbData = Object.values(prbMap)
-          .sort((a, b) => {
-            let tA = a.rawTime.trim().replace(" ", "T");
-            let tB = b.rawTime.trim().replace(" ", "T");
-            if (!tA.endsWith("Z") && !tA.includes("+")) tA += "Z";
-            if (!tB.endsWith("Z") && !tB.includes("+")) tB += "Z";
-            return new Date(tA) - new Date(tB);
-          })
-          .map(item => ({
-            time: formatDisplayTime(item.rawTime, bucketSize),
-            prbDl: +(item.count ? item.prbDl / item.count : item.prbDl || 0).toFixed(2),
-            peakPrb: +(item.peakPrb || 0).toFixed(2)
-          }));
+              time:
+                formatDisplayTime(
+                  item.rawTime,
+                  bucketSize
+                ),
 
-        setPrbTrendData(formattedPrbData);
+              dlMbps:
+                +(item.dlMbps || 0)
+                  .toFixed(2),
+
+              ulMbps:
+                +(item.ulMbps || 0)
+                  .toFixed(2)
+
+            }));
+
+        setThroughputTrendData(
+          formattedThroughputData
+        );
+
+        // =================================================
+        // GRAFIC PRB
+        // =================================================
+
+        const formattedPrbData =
+          Object.values(prbMap)
+            .sort(sortByTime)
+            .map(item => ({
+
+              time:
+                formatDisplayTime(
+                  item.rawTime,
+                  bucketSize
+                ),
+
+              prbDl:
+                +(
+                  item.count
+                    ? item.prbDl / item.count
+                    : item.prbDl || 0
+                ).toFixed(2),
+
+              peakPrb:
+                +(item.peakPrb || 0)
+                  .toFixed(2)
+
+            }));
+
+        setPrbTrendData(
+          formattedPrbData
+        );
 
       } catch (error) {
-        console.error("Eroare la încărcarea graficelor de capacitate:", error);
+
+        console.error(
+          "Eroare la încărcarea graficelor de capacitate:",
+          error
+        );
+
       }
+
     };
 
     fetchChartData();
-  }, [selectedStation, bucketSize, startTime, endTime]);
+
+  }, [
+    selectedStation,
+    bucketSize,
+    startTime,
+    endTime
+  ]);
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
+
     <div className="capacity-charts-grid">
+
+      {/* =================================================
+          GRAFIC THROUGHPUT
+      ================================================= */}
+
       <div className="capacity-card">
-        <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL (KB/s)</h3>
+
+        <div
+          className="chart-header-row"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '15px'
+          }}
+        >
+
+          <h3 style={{ margin: 0 }}>
+            Evoluție Throughput DL vs. UL (KB/s)
+          </h3>
+
           {onBucketChange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
-              <select 
-                value={bucketSize} 
-                onChange={(e) => onBucketChange(e.target.value)}
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+
+              <label
+                style={{
+                  fontSize: '13px',
+                  color: '#8b949e'
+                }}
+              >
+                Granularitate:
+              </label>
+
+              <select
+                value={bucketSize}
+                onChange={(e) =>
+                  onBucketChange(
+                    e.target.value
+                  )
+                }
                 className="filter-select"
               >
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="1d">1d</option>
+
+                <option value="15m">
+                  15m
+                </option>
+
+                <option value="1h">
+                  1h
+                </option>
+
+                <option value="1d">
+                  1d
+                </option>
+
               </select>
+
             </div>
+
           )}
+
         </div>
+
         <div className="chart-box-280">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={throughputTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-              <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" unit=" KB/s" />
+
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+          >
+
+            <LineChart
+              data={throughputTrendData}
+            >
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#30363d"
+              />
+
+              <XAxis
+                dataKey="time"
+                stroke="#8b949e"
+              />
+
+              <YAxis
+                stroke="#8b949e"
+                unit=" KB/s"
+              />
+
               <Tooltip
                 contentStyle={{
                   backgroundColor: '#161b22',
                   border: '1px solid #30363d'
                 }}
               />
+
               <Legend />
+
               <Line
                 type="monotone"
                 dataKey="dlMbps"
@@ -262,6 +607,7 @@ export default function CapacityChartsGrid({
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
+
               <Line
                 type="monotone"
                 dataKey="ulMbps"
@@ -270,37 +616,120 @@ export default function CapacityChartsGrid({
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
+
             </LineChart>
+
           </ResponsiveContainer>
+
         </div>
+
       </div>
 
+      {/* =================================================
+          GRAFIC PRB
+      ================================================= */}
+
       <div className="capacity-card">
-        <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <h3 style={{ margin: 0 }}>Grad de Ocupare Resurse (PRB DL % vs Peak)</h3>
+
+        <div
+          className="chart-header-row"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '15px'
+          }}
+        >
+
+          <h3 style={{ margin: 0 }}>
+            Grad de Ocupare Resurse
+            (PRB DL % vs Peak)
+          </h3>
+
           {onBucketChange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
-              <select 
-                value={bucketSize} 
-                onChange={(e) => onBucketChange(e.target.value)}
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+
+              <label
+                style={{
+                  fontSize: '13px',
+                  color: '#8b949e'
+                }}
+              >
+                Granularitate:
+              </label>
+
+              <select
+                value={bucketSize}
+                onChange={(e) =>
+                  onBucketChange(
+                    e.target.value
+                  )
+                }
                 className="filter-select"
               >
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="1d">1d</option>
+
+                <option value="15m">
+                  15m
+                </option>
+
+                <option value="1h">
+                  1h
+                </option>
+
+                <option value="1d">
+                  1d
+                </option>
+
               </select>
+
             </div>
+
           )}
+
         </div>
+
         <div className="chart-box-280">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={prbTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-              <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
-              <Tooltip content={<CustomTooltip />} />
+
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+          >
+
+            <AreaChart
+              data={prbTrendData}
+            >
+
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#30363d"
+              />
+
+              <XAxis
+                dataKey="time"
+                stroke="#8b949e"
+              />
+
+              <YAxis
+                stroke="#8b949e"
+                domain={[0, 100]}
+                unit="%"
+              />
+
+              <Tooltip
+                content={
+                  <CustomTooltip />
+                }
+              />
+
               <Legend />
+
               <Area
                 type="monotone"
                 dataKey="peakPrb"
@@ -308,6 +737,7 @@ export default function CapacityChartsGrid({
                 stroke="#f85149"
                 fill="#f8514922"
               />
+
               <Area
                 type="monotone"
                 dataKey="prbDl"
@@ -315,10 +745,15 @@ export default function CapacityChartsGrid({
                 stroke="#d29922"
                 fill="#d2992222"
               />
+
             </AreaChart>
+
           </ResponsiveContainer>
+
         </div>
+
       </div>
+
     </div>
   );
 }

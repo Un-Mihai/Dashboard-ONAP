@@ -103,14 +103,14 @@ export default function StationHeader({
           </label>
 
           <input
-            id="start-time"
-            type="datetime-local"
-            className="station-input"
-            value={startTime}
-            onChange={(e) =>
-              setStartTime(e.target.value)
-            }
-          />
+  id="start-time"
+  type="date"
+  className="station-input"
+  value={startTime}
+  onChange={(e) =>
+    setStartTime(e.target.value)
+  }
+/>
 
         </div>
 
@@ -124,49 +124,17 @@ export default function StationHeader({
           </label>
 
           <input
-            id="end-time"
-            type="datetime-local"
-            className="station-input"
-            value={endTime}
-            onChange={(e) =>
-              setEndTime(e.target.value)
-            }
-          />
+  id="end-time"
+  type="date"
+  className="station-input"
+  value={endTime}
+  onChange={(e) =>
+    setEndTime(e.target.value)
+  }
+/>
 
         </div>
 
-        {/* Granularitate */}
-        <div className="station-select-group">
-
-          <label
-            htmlFor="bucket-select"
-            className="station-label"
-          >
-            Granularitate:
-          </label>
-
-          <select
-            id="bucket-select"
-            className="station-select"
-            value={bucketSize}
-            onChange={(e) =>
-              setBucketSize(e.target.value)
-            }
-          >
-            <option value="15m">
-              15 Minute (15m)
-            </option>
-
-            <option value="1h">
-              1 Oră (1h)
-            </option>
-
-            <option value="1d">
-              1 Zi (1d)
-            </option>
-          </select>
-
-        </div>
 
       </div>
 
