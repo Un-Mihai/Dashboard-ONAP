@@ -69,7 +69,7 @@ with SessionLocal() as db:
     try:
         seed_default_data(db)
     except Exception as e:
-        print(f"Eroare la popularea datelor: {e}")
+        print(f"Seeding error: {e}")
         db.rollback()
 
 def get_db():
