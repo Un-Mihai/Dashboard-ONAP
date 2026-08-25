@@ -22,9 +22,7 @@ export default function StationDetails() {
   const [isComparing, setIsComparing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ==========================================
-  // PERIOADA SELECTATĂ
-  // ==========================================
+  
 
   const [startDate, setStartDate] = useState("2026-08-02");
   const [endDate, setEndDate] = useState("2026-08-04");
@@ -32,9 +30,7 @@ export default function StationDetails() {
   // Granularitatea graficelor
   const [bucketSize, setBucketSize] = useState("1h");
 
-  // ==========================================
-  // INTERVAL API
-  // ==========================================
+ 
 
   // Automat: începutul primei zile
   const startTime = `${startDate}T00:00:00+03:00`;
@@ -42,9 +38,7 @@ export default function StationDetails() {
   // Automat: sfârșitul ultimei zile
   const endTime = `${endDate}T23:59:59+03:00`;
 
-  // ==========================================
-  // METRICI
-  // ==========================================
+  
 
   const metrics = [
     "RFM_Energy_Consumption",
@@ -53,9 +47,7 @@ export default function StationDetails() {
     "UL_Traffic_Volume"
   ];
 
-  // ==========================================
-  // ÎNCARCĂ LISTA DE STAȚII
-  // ==========================================
+  
 
   useEffect(() => {
 
@@ -100,9 +92,7 @@ export default function StationDetails() {
 
   }, []);
 
-  // ==========================================
-  // ÎNCARCĂ DATELE STAȚIEI SELECTATE
-  // ==========================================
+ 
 
   useEffect(() => {
 
@@ -218,9 +208,7 @@ export default function StationDetails() {
     bucketSize
   ]);
 
-  // ==========================================
-  // ÎNCARCĂ STAȚIA DE COMPARAȚIE
-  // ==========================================
+ 
 
   useEffect(() => {
 
@@ -341,9 +329,7 @@ export default function StationDetails() {
     bucketSize
   ]);
 
-  // ==========================================
-  // ISTORIC PENTRU GRAFICE
-  // ==========================================
+ 
 
   useEffect(() => {
 
@@ -439,11 +425,7 @@ export default function StationDetails() {
                 peakPrbItem["Peak_PRB"]
               ) || 0;
 
-            // ==========================================
-            // IMPORTANT:
-            // NU folosim new Date() aici.
-            // Păstrăm exact ora primită de la backend.
-            // ==========================================
+           
 
             let formattedTime = '';
 
@@ -497,9 +479,7 @@ export default function StationDetails() {
           }
         });
 
-        // ==========================================
-        // SORTARE FĂRĂ CONVERSIE TIMEZONE
-        // ==========================================
+       
 
         history.sort(
           (a, b) =>
@@ -537,9 +517,7 @@ export default function StationDetails() {
     bucketSize
   ]);
 
-  // ==========================================
-  // STAȚIA CURENTĂ
-  // ==========================================
+ 
 
   const currentSt =
     stationsData[selectedGnb] || {
@@ -564,25 +542,19 @@ export default function StationDetails() {
       peakPrb: 0
     };
 
-  // ==========================================
-  // STAȚIA DE COMPARAȚIE
-  // ==========================================
+  
 
   const compareSt =
     stationsData[compareGnb] ||
     currentSt;
 
-  // ==========================================
-  // EXPORT PDF
-  // ==========================================
+  
 
   const handleExportPDF = () => {
     window.print();
   };
 
-  // ==========================================
-  // LOADING
-  // ==========================================
+ 
 
   if (loading) {
 
@@ -593,9 +565,7 @@ export default function StationDetails() {
     );
   }
 
-  // ==========================================
-  // RENDER
-  // ==========================================
+  
 
   return (
 
@@ -631,7 +601,7 @@ export default function StationDetails() {
           setIsComparing
         }
 
-        // Trimitem datele către Header.
+        
         startTime={
           startDate
         }

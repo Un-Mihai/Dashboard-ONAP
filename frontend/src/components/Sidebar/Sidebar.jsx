@@ -12,7 +12,7 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
   return (
     <div className="sidebar-container">
       <div>
-        {/* Logo ONAP Stilizat */}
+        {/* Logo ONAP */}
         <div className="sidebar-logo-wrapper">
           <div className="sidebar-logo-box">O</div>
           <div>

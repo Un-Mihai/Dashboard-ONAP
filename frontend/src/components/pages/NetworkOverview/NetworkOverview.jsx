@@ -19,16 +19,14 @@ export default function NetworkOverview({ viewMode }) {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Selector stație + granularitate pe grafic
   const [selectedStation, setSelectedStation] = useState('ALL');
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  // Interval de date
   const [startDate, setStartDate] = useState("2026-07-28");
   const [endDate, setEndDate] = useState("2026-07-28");
 
-  // Trimitem toată ziua către backend
+  
   const startIso = `${startDate}T00:00:00+03:00`;
   const endIso = `${endDate}T23:59:59+03:00`;
 
@@ -78,8 +76,7 @@ export default function NetworkOverview({ viewMode }) {
     );
   };
 
-  // Afișăm exact ora primită de la backend.
-  // Nu folosim new Date(), pentru a evita conversia timezone-ului.
+ 
   const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) {
       return "";
@@ -89,7 +86,7 @@ export default function NetworkOverview({ viewMode }) {
       .trim()
       .replace(" ", "T");
 
-    // Pentru granularitatea de 1 zi afișăm data.
+  
     if (currentBucket === '1d') {
       const datePart = cleanTime.substring(0, 10);
 
@@ -101,7 +98,6 @@ export default function NetworkOverview({ viewMode }) {
       }
     }
 
-    // Pentru 15m și 1h păstrăm ora exact cum vine din backend.
     return cleanTime.substring(11, 16) || timeStr;
   };
 
@@ -136,9 +132,7 @@ export default function NetworkOverview({ viewMode }) {
           const node = targetNodes[i];
 
           try {
-            // ==========================================
             // 1. DATE AGREGATE PENTRU CARDURI + TABEL
-            // ==========================================
 
             const resAgg = await getTelemetryData(
               node,
@@ -191,9 +185,7 @@ export default function NetworkOverview({ viewMode }) {
               active_alarms: availability < 100 ? 1 : 0
             });
 
-            // ==========================================
             // 2. SERIE TEMPORALĂ PENTRU GRAFIC
-            // ==========================================
 
             const resSeries = await getTelemetryData(
               node,
@@ -227,9 +219,7 @@ export default function NetworkOverview({ viewMode }) {
                 ? seriesData.UL_Traffic_Volume
                 : [];
 
-            // ==========================================
             // CONSUM ENERGIE
-            // ==========================================
 
             powerArr.forEach(item => {
               const t = extractTime(item);
@@ -255,10 +245,7 @@ export default function NetworkOverview({ viewMode }) {
 
               history[t].putere += val;
             });
-
-            // ==========================================
             // TRAFIC DL + UL
-            // ==========================================
 
             [...dlArr, ...ulArr].forEach(item => {
               const t = extractTime(item);
@@ -292,18 +279,13 @@ export default function NetworkOverview({ viewMode }) {
             );
           }
         }
-
-        // ==========================================
         // CALCUL DISPONIBILITATE MEDIE
-        // ==========================================
 
         const avgAvail = stations.length
           ? +(totalAvailSum / stations.length).toFixed(1)
           : 0;
 
-        // ==========================================
         // DATE PENTRU CARDURI + TABEL
-        // ==========================================
 
         setNetworkData({
           total_gnb:
@@ -368,9 +350,6 @@ export default function NetworkOverview({ viewMode }) {
     endDate
   ]);
 
-  // ==========================================
-  // LOADING
-  // ==========================================
 
   if (loading && !networkData) {
     return (
@@ -383,9 +362,7 @@ export default function NetworkOverview({ viewMode }) {
   return (
     <div className="overview-page-wrapper">
 
-      {/* ========================================
-          FILTRE
-      ======================================== */}
+      {}
 
       <div className="filters-header">
 
@@ -465,9 +442,7 @@ export default function NetworkOverview({ viewMode }) {
 
       </div>
 
-      {/* ========================================
-          GRAFIC
-      ======================================== */}
+      {}
 
       {viewMode === 'grafic' ? (
 
@@ -506,9 +481,7 @@ export default function NetworkOverview({ viewMode }) {
 
       ) : (
 
-        /* ========================================
-           TABEL
-        ======================================== */
+        
 
         <NetworkOverviewTable
           stations={networkData?.stations || []}

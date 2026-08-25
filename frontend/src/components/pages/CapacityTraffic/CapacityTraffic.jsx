@@ -13,17 +13,13 @@ import './CapacityTraffic.css';
 
 export default function CapacityTraffic({ viewMode }) {
 
-  // ==========================================
-  // SELECTARE STAȚIE + GRANULARITATE
-  // ==========================================
+  
 
   const [selectedStation, setSelectedStation] = useState('ALL');
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  // ==========================================
-  // INTERVAL DE DATE
-  // ==========================================
+ 
 
   const [startDate, setStartDate] = useState("2026-07-28");
   const [endDate, setEndDate] = useState("2026-07-28");
@@ -32,16 +28,12 @@ export default function CapacityTraffic({ viewMode }) {
   const startIso = `${startDate}T00:00:00+03:00`;
   const endIso = `${endDate}T23:59:59+03:00`;
 
-  // ==========================================
-  // FILTRU CONGESTIE
-  // ==========================================
+  
 
   const [enableCongestionFilter, setEnableCongestionFilter] = useState(false);
   const [congestionThreshold, setCongestionThreshold] = useState(75);
 
-  // ==========================================
-  // DATE + LOADING
-  // ==========================================
+  
 
   const [stationsData, setStationsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,9 +45,7 @@ export default function CapacityTraffic({ viewMode }) {
     "Peak_PRB"
   ];
 
-  // ==========================================
-  // EXTRAGERE VALORI
-  // ==========================================
+ 
 
   const extractVal = (data, key) => {
     if (
@@ -90,9 +80,7 @@ export default function CapacityTraffic({ viewMode }) {
     return Number(val) || 0;
   };
 
-  // ==========================================
-  // ÎNCĂRCARE DATE
-  // ==========================================
+
 
   useEffect(() => {
 
@@ -102,9 +90,7 @@ export default function CapacityTraffic({ viewMode }) {
 
       try {
 
-        // ==========================================
-        // NODURI
-        // ==========================================
+      
 
         const nodesResponse = await getNodeNames();
 
@@ -116,9 +102,7 @@ export default function CapacityTraffic({ viewMode }) {
 
         setAvailableNodes(nodes);
 
-        // ==========================================
-        // STAȚII SELECTATE
-        // ==========================================
+       
 
         const targetNodes =
           selectedStation === 'ALL'
@@ -129,9 +113,7 @@ export default function CapacityTraffic({ viewMode }) {
                   String(selectedStation)
               );
 
-        // ==========================================
-        // DATE PENTRU FIECARE STAȚIE
-        // ==========================================
+        
 
         const stationPromises = targetNodes.map(
           async (nodeName, index) => {
@@ -191,9 +173,7 @@ export default function CapacityTraffic({ viewMode }) {
           }
         );
 
-        // ==========================================
-        // REZULTATE
-        // ==========================================
+       
 
         const results =
           await Promise.all(stationPromises);
@@ -230,9 +210,7 @@ export default function CapacityTraffic({ viewMode }) {
     endDate
   ]);
 
-  // ==========================================
-  // FILTRU CONGESTIE
-  // ==========================================
+ 
 
   const displayedStations =
     enableCongestionFilter
@@ -243,16 +221,11 @@ export default function CapacityTraffic({ viewMode }) {
         )
       : stationsData;
 
-  // ==========================================
-  // RENDER
-  // ==========================================
 
   return (
     <div className="capacity-container">
 
-      {/* ========================================
-          FILTRE
-      ======================================== */}
+      {}
 
       <div className="filters-header">
 
@@ -290,9 +263,7 @@ export default function CapacityTraffic({ viewMode }) {
 
         </div>
 
-        {/* ========================================
-            INTERVAL DATE
-        ======================================== */}
+        {}
 
         <div className="date-picker-group">
 
@@ -332,9 +303,7 @@ export default function CapacityTraffic({ viewMode }) {
 
         </div>
 
-        {/* ========================================
-            FILTRU PRAG CONGESTIE
-        ======================================== */}
+        {}
 
         <div className="congestion-filter-box">
 
@@ -406,9 +375,7 @@ export default function CapacityTraffic({ viewMode }) {
 
       </div>
 
-      {/* ========================================
-          KPI-URI
-      ======================================== */}
+      {}
 
       <CapacityKpiGrid
         selectedStation={selectedStation}
@@ -416,9 +383,7 @@ export default function CapacityTraffic({ viewMode }) {
         endTime={endIso}
       />
 
-      {/* ========================================
-          VIEW GRAFIC
-      ======================================== */}
+      {}
 
       {viewMode === 'grafic' ? (
 
@@ -467,9 +432,7 @@ export default function CapacityTraffic({ viewMode }) {
 
       ) : (
 
-        /* ========================================
-           VIEW TABEL
-        ======================================== */
+       
 
         <div className="capacity-card">
 

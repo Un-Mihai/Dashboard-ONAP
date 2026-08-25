@@ -64,9 +64,7 @@ export default function StationChartsGrid({
   return (
     <div className="station-charts-grid">
 
-      {/* ==========================================
-          GRAFIC CONSUM ENERGIE
-      ========================================== */}
+      {}
 
       <div className="station-card">
 
@@ -84,7 +82,7 @@ export default function StationChartsGrid({
             Evoluție Consum Energie
           </h3>
 
-          {/* GRANULARITATE */}
+          {}
 
           <div
             style={{

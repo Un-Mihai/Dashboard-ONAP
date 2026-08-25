@@ -90,7 +90,7 @@ export default function CapacityChartsGrid({
   bucketSize = '15m',
   onBucketChange,
 
-  // Primim intervalul complet de la CapacityTraffic
+  
   startTime = "2026-07-28T00:00:00+03:00",
   endTime = "2026-07-28T23:59:59+03:00"
 }) {
@@ -101,9 +101,6 @@ export default function CapacityChartsGrid({
   const [prbTrendData, setPrbTrendData] =
     useState([]);
 
-  // =====================================================
-  // EXTRAGERE TIMP
-  // =====================================================
 
   const extractTime = (item) => {
     return (
@@ -115,12 +112,7 @@ export default function CapacityChartsGrid({
     );
   };
 
-  // =====================================================
-  // FORMATARE TIMP
-  // IMPORTANT:
-  // Nu folosim new Date() aici deoarece poate schimba
-  // ora prin conversia timezone.
-  // =====================================================
+
 
   const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) return "";
@@ -129,7 +121,7 @@ export default function CapacityChartsGrid({
       .trim()
       .replace(" ", "T");
 
-    // Pentru granularitate zilnică
+   
     if (currentBucket === '1d') {
       const datePart = cleanTime.split('T')[0];
 
@@ -144,7 +136,7 @@ export default function CapacityChartsGrid({
       return cleanTime.substring(0, 10);
     }
 
-    // Luăm ora EXACT cum vine din backend
+   
     const timePart = cleanTime.split('T')[1];
 
     if (timePart) {
@@ -154,9 +146,6 @@ export default function CapacityChartsGrid({
     return cleanTime.substring(11, 16) || cleanTime;
   };
 
-  // =====================================================
-  // SORTARE TIMP
-  // =====================================================
 
   const sortByTime = (a, b) => {
     const timeA = String(a.rawTime || '')
@@ -170,9 +159,7 @@ export default function CapacityChartsGrid({
     return timeA.localeCompare(timeB);
   };
 
-  // =====================================================
-  // ÎNCĂRCARE DATE GRAFICE
-  // =====================================================
+
 
   useEffect(() => {
 
@@ -180,9 +167,7 @@ export default function CapacityChartsGrid({
 
       try {
 
-        // =================================================
-        // NODURI
-        // =================================================
+       
 
         const nodesResponse =
           await getNodeNames();
@@ -195,9 +180,7 @@ export default function CapacityChartsGrid({
             ? rawNodes
             : (rawNodes?.nodes || []);
 
-        // =================================================
-        // STAȚII SELECTATE
-        // =================================================
+     
 
         const targetNodes =
           selectedStation === 'ALL'
@@ -208,9 +191,7 @@ export default function CapacityChartsGrid({
                   String(selectedStation)
               );
 
-        // =================================================
-        // MAP-URI PENTRU GRAFICE
-        // =================================================
+        
 
         const throughputMap = {};
         const prbMap = {};
@@ -246,9 +227,6 @@ export default function CapacityChartsGrid({
           return prbMap[time];
         };
 
-        // =================================================
-        // DATE PENTRU FIECARE STAȚIE
-        // =================================================
 
         for (const node of targetNodes) {
 
@@ -275,9 +253,9 @@ export default function CapacityChartsGrid({
             const data =
               response.data || {};
 
-            // =============================================
+            
             // THROUGHPUT DL
-            // =============================================
+          
 
             const dlData =
               Array.isArray(data["DL_Throughput"])
@@ -304,9 +282,8 @@ export default function CapacityChartsGrid({
               entry.dlMbps += value;
             });
 
-            // =============================================
             // THROUGHPUT UL
-            // =============================================
+           
 
             const ulData =
               Array.isArray(data["UL_Throughput"])

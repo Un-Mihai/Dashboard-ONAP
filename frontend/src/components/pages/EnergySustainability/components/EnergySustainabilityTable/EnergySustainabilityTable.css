@@ -1,5 +1,45 @@
 .energy-table-card {
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+
+.energy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  color: #c9d1d9;
+}
+
+.energy-table th {
+  padding: 12px;
+  color: #8b949e;
+  font-size: 13px;
+  text-align: left;
+  border-bottom: 1px solid #30363d;
+  background-color: #0d1117;
+}
+
+.energy-table td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid #21262d;
+}
+
+.efficiency-text {
+  font-weight: bold;
+}
+
+.efficiency-text.critical {
+  color: #f85149;
+}
+
+.efficiency-text.medium {
+  color: #d29922;
+}
+
+.efficiency-text.good {
+  color: #3fb950;
 }
 
 .recommendation-badge.eco {

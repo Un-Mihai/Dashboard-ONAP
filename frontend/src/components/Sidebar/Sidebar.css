@@ -14,7 +14,7 @@
   z-index: 100;
 }
 
-/* Logo Stilizat */
+/* Logo */
 .sidebar-logo-wrapper {
   display: flex;
   align-items: center;
@@ -112,7 +112,7 @@
   box-shadow: 0 0 8px #3fb950;
 }
 
-/* Comutator Vedere (Grafic / Tabel) */
+/* Comutator Grafic / Tabel */
 .view-mode-toggle {
   background-color: #161b22;
   border-radius: 8px;
