@@ -1,6 +1,17 @@
-.energy-container {
-  display: grid;
+.energy-page-wrapper {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.energy-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .energy-card {
@@ -9,6 +20,79 @@
   border-radius: 8px;
   padding: 20px;
   color: #c9d1d9;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Bara de Filtre Antet (Stație + Interval Dată/Oră) */
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.date-picker-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  color: #8b949e;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-select {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.filter-select:hover,
+.filter-select:focus {
+  border-color: #58a6ff;
+}
+
+/* Câmpuri Dată și Oră */
+.filter-input-date {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  color-scheme: dark;
+}
+
+.filter-input-date:hover,
+.filter-input-date:focus {
+  border-color: #58a6ff;
 }
 
 /* KPI Cards */
@@ -16,6 +100,8 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .kpi-value {
@@ -36,44 +122,7 @@
 /* Container Grafice */
 .chart-container-280 {
   height: 280px;
-  margin-top: 20px;
-}
-
-/* Stiluri Tabel Monitorizare RFM */
-.energy-table {
+  margin-top: 15px;
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-  color: #c9d1d9;
-}
-
-.energy-table th {
-  padding: 12px;
-  color: #8b949e;
-  font-size: 13px;
-  text-align: left;
-  border-bottom: 1px solid #30363d;
-  background-color: #0d1117;
-}
-
-.energy-table td {
-  padding: 12px;
-  font-size: 14px;
-  border-bottom: 1px solid #21262d;
-}
-
-.efficiency-text {
-  font-weight: bold;
-}
-
-.efficiency-text.critical {
-  color: #f85149;
-}
-
-.efficiency-text.medium {
-  color: #d29922;
-}
-
-.efficiency-text.good {
-  color: #3fb950;
+  box-sizing: border-box;
 }

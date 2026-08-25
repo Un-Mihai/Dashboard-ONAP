@@ -16,19 +16,27 @@ export default function NetworkOverviewTable({ stations = [] }) {
           </tr>
         </thead>
         <tbody>
-          {stations.map((st) => (
-            <tr key={st.id}>
-              <td>{st.name}</td>
-              <td>{st.availability}%</td>
-              <td>{st.traffic} GB</td>
-              <td>{st.power} W</td>
-              <td>
-                <span className={`status-badge ${st.availability >= 99.8 ? 'online' : 'down'}`}>
-                  {st.availability >= 99.8 ? 'ONLINE' : 'DOWN'}
-                </span>
+          {stations.length === 0 ? (
+            <tr>
+              <td colSpan="5" style={{ textAlign: 'center', color: '#8b949e' }}>
+                Nu există date disponibile pentru selecția curentă.
               </td>
             </tr>
-          ))}
+          ) : (
+            stations.map((st) => (
+              <tr key={st.id || st.node_name}>
+                <td>{st.name}</td>
+                <td>{st.availability}%</td>
+                <td>{st.traffic} GB</td>
+                <td>{st.power} W</td>
+                <td>
+                  <span className={`status-badge ${st.availability >= 99.8 ? 'online' : 'down'}`}>
+                    {st.availability >= 99.8 ? 'ONLINE' : 'DOWN'}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

@@ -6,14 +6,13 @@ const menuItems = [
   { id: 'energy', label: 'Energy & Sustainability', icon: '⚡' },
   { id: 'capacity', label: 'Capacity & Traffic', icon: '📈' },
   { id: 'station', label: 'Station Details', icon: '📡' },
-  { id: 'alarms', label: 'Alarms & Thresholds', icon: '🚨' },
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode }) {
   return (
     <div className="sidebar-container">
       <div>
-        {/* Logo ONAP Stilizat */}
+        {/* Logo ONAP */}
         <div className="sidebar-logo-wrapper">
           <div className="sidebar-logo-box">O</div>
           <div>
@@ -26,6 +25,7 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
         <div className="sidebar-menu-list">
           {menuItems.map((item) => {
             const isActive = activeTab === item.id;
+
             return (
               <button
                 key={item.id}
@@ -55,6 +55,7 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
           >
             📊 Grafic
           </button>
+
           <button
             onClick={() => setViewMode('tabel')}
             className={`toggle-btn ${viewMode === 'tabel' ? 'active' : ''}`}

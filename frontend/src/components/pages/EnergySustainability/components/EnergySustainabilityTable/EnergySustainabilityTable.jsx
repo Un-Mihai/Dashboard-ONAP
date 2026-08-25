@@ -20,15 +20,18 @@ export default function EnergySustainabilityTable({ stationEnergyData = [] }) {
             <th>Consum Mediu (W)</th>
             <th>Trafic (GB)</th>
             <th>Eficiență (GB/kWh)</th>
-            <th>Recomandare Sistem</th>
           </tr>
         </thead>
         <tbody>
-          {stationEnergyData.map((st) => {
-            const isInefficient = st.efficiency > 0 && st.efficiency < 1.0;
-
-            return (
-              <tr key={st.id}>
+          {stationEnergyData.length === 0 ? (
+            <tr>
+              <td colSpan="5" style={{ textAlign: 'center', color: '#8b949e', padding: '20px' }}>
+                Nu există date disponibile.
+              </td>
+            </tr>
+          ) : (
+            stationEnergyData.map((st) => (
+              <tr key={st.id || st.node_name || st.name}>
                 <td>{st.name}</td>
                 <td>{st.voltage} V</td>
                 <td>{st.power} W</td>
@@ -38,20 +41,9 @@ export default function EnergySustainabilityTable({ stationEnergyData = [] }) {
                     {st.efficiency} GB/kWh
                   </span>
                 </td>
-                <td>
-                  {isInefficient ? (
-                    <span className="recommendation-badge eco">
-                      Sugestie: Activare Eco/Night Mode
-                    </span>
-                  ) : st.efficiency === 0 ? (
-                    <span className="recommendation-badge offline">Stație Offline</span>
-                  ) : (
-                    <span className="recommendation-badge optimal">Parametri Optimi</span>
-                  )}
-                </td>
               </tr>
-            );
-          })}
+            ))
+          )}
         </tbody>
       </table>
     </div>
