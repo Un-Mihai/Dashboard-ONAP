@@ -17,14 +17,14 @@ metrics = {
     },
     "DL_Throughput": {
         "Type": 'COMPOSITE',
-        "Components": ['GRANULARITY', 'VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN'],
+        "Components": ['VS.NRASU.PDCP_SDU_USDAT_VOL_DL_SA_PLMN'],
         "Formula": 'VS_NRASU_PDCP_SDU_USDAT_VOL_DL_SA_PLMN * 8 / GRANULARITY',
         "Aggregation": 'SUM',
         "Units": 'KB/s'
     },
     "UL_Throughput": {
         "Type": 'COMPOSITE',
-        "Components": ['GRANULARITY', 'VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN'],
+        "Components": ['VS.NRASU.PDCP_SDU_USDAT_VOL_UL_SA_PLMN'],
         "Formula": 'VS_NRASU_PDCP_SDU_USDAT_VOL_UL_SA_PLMN * 8 / GRANULARITY',
         "Aggregation": 'SUM',
         "Units": 'KB/s'

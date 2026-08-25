@@ -24,10 +24,22 @@ def get_last_update(db: Session, end_time: datetime = None):
     if end_time is None:
         end_time = datetime.now()
 
-    query = text("SELECT MAX(END_TIME) FROM ONAP_DATA")
-    result = db.execute(query).scalar()
+    query = text("SELECT MAX(END_TIME) FROM ONAP_DATA WHERE END_TIME <= :END_TIME")
+    result = db.execute(query, {"END_TIME": end_time}).scalar()
 
     return result
+
+def get_metric_data(db: Session, metric_name: str):
+    query = text("SELECT * FROM METRICS WHERE NAME = :METRIC_NAME")
+    results = db.execute(query, {"METRIC_NAME": metric_name}).fetchall()
+
+    if results:
+        metric_data = [dict(row._mapping) for row in results][0]
+        metric_data['COMPONENTS'] = metric_data['COMPONENTS'].split(',')
+
+        return metric_data
+    else:
+        raise Exception("Metric not found")
 
 def save_batch(db:Session, batch) -> None:
 
@@ -107,8 +119,8 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
 
     dataframe = pd.DataFrame(sql_results)
 
-    metric_formula = metric_data.get('Formula')
-    metric_aggregation = metric_data.get('Aggregation')
+    metric_formula = metric_data.get('FORMULA')
+    metric_aggregation = metric_data.get('AGGREGATION')
 
     if metric_aggregation == "SUM":
         value_column = 'sum_val'
@@ -131,18 +143,18 @@ def procces_query(db:Session, metric_data: dict[str, str], bucket_size: str, que
 
     return results
 
-def calculate(db: Session, node_name: str, metric: str, bucket_size: str, aggregate: bool, start_time, end_time):
+def calculate(db: Session, node_name: str, metric_name: str, bucket_size: str, aggregate: bool, start_time, end_time):
 
     if aggregate == True:
         bucket_size = '15m'
 
-    metric_data = metrics.get(metric)
+    metric_data = get_metric_data(db, metric_name)
 
     last_update = get_last_update(db, end_time)
     safe_end_time = get_rounded_time(bucket_size, last_update)
     safe_start_time = get_rounded_time(bucket_size, start_time)
 
-    query = build_telemetry_query(db, node_name, metric_data.get('Components'), bucket_size, safe_start_time, safe_end_time)
+    query = build_telemetry_query(db, node_name, metric_data.get('COMPONENTS'), bucket_size, safe_start_time, safe_end_time)
 
     results = procces_query(db, metric_data, bucket_size, query)
 
@@ -150,7 +162,7 @@ def calculate(db: Session, node_name: str, metric: str, bucket_size: str, aggreg
         return results
     
     if aggregate == True:
-        aggregation_type = metric_data.get('Aggregation')
+        aggregation_type = metric_data.get('AGGREGATION')
 
         if aggregation_type == 'SUM':
             value = results.sum()
@@ -161,7 +173,7 @@ def calculate(db: Session, node_name: str, metric: str, bucket_size: str, aggreg
 
         return {"value": value.item() if hasattr(value, 'item') else value}
 
-    results.name = metric
+    results.name = metric_name
     results_export = results.reset_index()
     results_export['bucket_time'] = results_export['bucket_time'].astype(str)
 

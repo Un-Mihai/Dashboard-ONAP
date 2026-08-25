@@ -34,4 +34,3 @@ class Indicators(Base):
     __tablename__ = "FOLLOWED_INDICATORS"
 
     measurement_type: Mapped[str] = mapped_column("MEASUREMENT_TYPE", String(100), primary_key=True)
-    measurement_units: Mapped[str] = mapped_column("MEASUREMENT_VALUE", String(10))
