@@ -24,7 +24,6 @@ class Metrics(Base):
 
     id: Mapped[int] = mapped_column("ID", Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column("NAME", String(100), nullable=False)
-    type: Mapped[str] = mapped_column("TYPE", String(20), nullable=False)
     components: Mapped[str] = mapped_column("COMPONENTS", String(500), nullable=False)
     formula: Mapped[str] = mapped_column("FORMULA", String(700), nullable=False)
     aggregation: Mapped[str] = mapped_column("AGGREGATION", String(5), nullable=False)

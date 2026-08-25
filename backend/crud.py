@@ -1,15 +1,14 @@
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import text, select, insert, func, cast, Date, literal_column
 
 from models import TelemetryData
-from metric_data import metrics
 
-def get_followed_metrics(db: Session) -> list[str]:
+def get_followed_indicators(db: Session) -> list[str]:
 
-    query = text("SELECT MEASUREMENT_TYPE FROM dbo.FOLLOWED_METRICS")
+    query = text("SELECT MEASUREMENT_TYPE FROM dbo.FOLLOWED_INDICATORS")
     results = db.execute(query).fetchall()
 
     return [row._mapping.get("MEASUREMENT_TYPE") for row in results]
@@ -30,7 +29,7 @@ def get_last_update(db: Session, end_time: datetime = None):
     return result
 
 def get_metric_data(db: Session, metric_name: str):
-    query = text("SELECT * FROM METRICS WHERE NAME = :METRIC_NAME")
+    query = text("SELECT * FROM dbo.METRICS WHERE NAME = :METRIC_NAME")
     results = db.execute(query, {"METRIC_NAME": metric_name}).fetchall()
 
     if results:
@@ -47,6 +46,46 @@ def save_batch(db:Session, batch) -> None:
     db.commit()
     
     batch.clear()
+
+def save_new_metric(db: Session, name: str, formula: str, aggregation: str, units: str):
+    math_symbols = ['+', '-', '*', ' x ', '/', '(', ')']
+
+    cleared_formula = formula
+    for symbol in math_symbols:
+        cleared_formula = cleared_formula.replace(symbol, " ")
+        formula = formula.replace(symbol, f" {symbol} ")
+    cleared_formula = cleared_formula.split()
+
+    followed_indicators = get_followed_indicators(db)
+    components = [component for component in cleared_formula if not component.replace('.', '').isdigit()]
+    new_components = [component for component in components if component not in followed_indicators]
+
+    formula = [elem.replace('.', '_') if elem in components else elem for elem in formula.split()]
+
+    if new_components:
+        insert_indicators = "INSERT INTO dbo.FOLLOWED_INDICATORS (MEASUREMENT_TYPE) VALUES "
+        for component in components:
+            insert_indicators += f"\n('{component}'),"
+        insert_indicators = text(insert_indicators.rstrip(','))
+
+        db.execute(insert_indicators)
+
+    insert_metric = text("""INSERT INTO dbo.METRICS (NAME, COMPONENTS, FORMULA, AGGREGATION, UNITS)
+                    VALUES (:NAME, :COMPONENTS, :FORMULA, :AGGREGATION, :UNITS)""")
+
+    metric = {
+        "NAME": name,
+        "COMPONENTS": ",".join(components),
+        "FORMULA": " ".join(formula),
+        "AGGREGATION": aggregation,
+        "UNITS": units
+    }
+
+    db.execute(insert_metric, metric)
+
+    db.commit()
+                
+    
 
 def get_rounded_time(bucket_size: str, time: datetime) -> datetime:
 

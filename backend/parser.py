@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from collections.abc import Generator
 
 from file_manager import get_files, mark_file
-from crud import get_followed_metrics, save_batch
+from crud import get_followed_indicators, save_batch
 
 def clear_memory(elem):
     elem.clear()
@@ -114,7 +114,7 @@ def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
 
     batch_size = int(os.getenv('BATCH_SIZE', '1000'))
 
-    followed_metrics = get_followed_metrics(db)
+    followed_metrics = get_followed_indicators(db)
 
     for file in get_files('UNPARSED'):
         batch = []

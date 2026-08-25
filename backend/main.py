@@ -7,7 +7,7 @@ from datetime import datetime, timezone, timedelta
 from database import get_db
 from parser import parse_files
 from teste import mark_all_files
-from crud import calculate, get_node_names, get_metric_data
+from crud import calculate, get_node_names, get_metric_data, save_new_metric
 
 app = FastAPI()
 
@@ -33,8 +33,8 @@ def unmark_files():
     mark_all_files('UNPARSED')
 
 @app.post("/api/test")
-def gest_test(db: Session = Depends(get_db), metric_name: str = "DL_Troughput"):
-    return get_metric_data(db, metric_name)
+def gest_test(name: str, formula: str, aggregation: str, units: str, db: Session = Depends(get_db)):
+    save_new_metric(db, name, formula, aggregation, units)
 
 @app.post("/api/parsefile")
 def parse_data(db: Session = Depends(get_db)):
@@ -60,6 +60,10 @@ def get_data(node_name: str,
 @app.post("/api/node_names")
 def get_all_node_names(db: Session = Depends(get_db)):
     return get_node_names(db)
+
+@app.post("/api/add_metric")
+def gest_test(name: str, formula: str, aggregation: str, units: str, db: Session = Depends(get_db)):
+    save_new_metric(db, name, formula, aggregation, units)
 
 
     
