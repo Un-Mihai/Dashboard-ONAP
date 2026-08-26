@@ -2,9 +2,11 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Bara de filtrare: Stație + Dată / Oră */
 .filters-header {
   display: flex;
   justify-content: space-between;
@@ -15,6 +17,8 @@
   border: 1px solid #30363d;
   border-radius: 8px;
   padding: 12px 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .date-picker-group {
@@ -53,7 +57,6 @@
   border-color: #58a6ff;
 }
 
-/* Câmpuri Dată și Oră */
 .filter-input-date {
   background-color: #0d1117;
   color: #c9d1d9;
@@ -73,8 +76,12 @@
 }
 
 .overview-container {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .overview-card {
@@ -83,12 +90,16 @@
   border-radius: 8px;
   padding: 20px;
   color: #c9d1d9;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .kpi-value {
@@ -102,7 +113,6 @@
   color: #3fb950;
 }
 
-/* Grid View Stații */
 .stations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -157,13 +167,13 @@
   justify-content: center;
 }
 
-/* Grafic */
 .chart-wrapper {
   height: 300px;
   margin-top: 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Tabel */
 .overview-table {
   width: 100%;
   border-collapse: collapse;
@@ -209,4 +219,29 @@
 
 .status-error {
   color: #f85149;
+}
+
+.traffic-chart-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.traffic-chart-card .chart-wrapper {
+  width: 100%;
+  height: 340px;
+  box-sizing: border-box;
+  margin-top: 10px;
+}
+
+.total-traffic-card,
+.total-gnb-card,
+.average-power-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
 }

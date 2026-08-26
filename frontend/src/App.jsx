@@ -1,92 +1,65 @@
 import React, { useState } from 'react';
-
 import Sidebar from "./components/Sidebar/Sidebar";
 import NetworkOverview from "./components/pages/NetworkOverview/NetworkOverview";
 import EnergySustainability from "./components/pages/EnergySustainability/EnergySustainability";
 import CapacityTraffic from "./components/pages/CapacityTraffic/CapacityTraffic";
 import StationDetails from "./components/pages/StationDetails/StationDetails";
+import './App.css';
 
-function App() {
+export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewMode, setViewMode] = useState('grafic');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const renderContent = () => {
+ const renderContent = () => {
+    let pageComponent = null;
+
     switch (activeTab) {
       case 'overview':
-        return <NetworkOverview viewMode={viewMode} />;
-
+        pageComponent = <NetworkOverview viewMode={viewMode} />;
+        break;
       case 'energy':
-        return <EnergySustainability viewMode={viewMode} />;
-
+        pageComponent = <EnergySustainability viewMode={viewMode} />;
+        break;
       case 'capacity':
-        return <CapacityTraffic viewMode={viewMode} />;
-
+        pageComponent = <CapacityTraffic viewMode={viewMode} />;
+        break;
       case 'station':
-        return <StationDetails />;
-
+        pageComponent = <StationDetails />;
+        break;
       case 'alarms':
-        return <ActiveAlarms />;
-
+        pageComponent = <ActiveAlarms />;
+        break;
       default:
-        return <NetworkOverview viewMode={viewMode} />;
+        pageComponent = <NetworkOverview viewMode={viewMode} />;
     }
+
+    return (
+      <div style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        {pageComponent}
+      </div>
+    );
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: '#0d1117',
-        minHeight: '100vh',
-        color: '#c9d1d9',
-        display: 'flex'
-      }}
-    >
+    <div className="app-layout">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         viewMode={viewMode}
         setViewMode={setViewMode}
+        isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
       />
 
-      <div
-        style={{
-          marginLeft: '280px',
-          flex: 1,
-          padding: '32px',
-          maxWidth: '1400px'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '24px',
-            borderBottom: '1px solid #21262d',
-            paddingBottom: '12px'
-          }}
-        >
-          <h2
-            style={{
-              color: '#f0f6fc',
-              margin: 0,
-              textTransform: 'uppercase'
-            }}
-          >
+      <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+        <div className="page-top-header">
+          <h2>
             {activeTab.replace('-', ' ')}
           </h2>
 
           {activeTab !== 'alarms' && activeTab !== 'station' && (
-            <span
-              style={{
-                fontSize: '12px',
-                color: '#8b949e',
-                backgroundColor: '#161b22',
-                padding: '6px 12px',
-                borderRadius: '12px',
-                border: '1px solid #30363d'
-              }}
-            >
+            <span className="view-mode-badge">
               Mod Vizualizare:{' '}
               <strong style={{ color: '#58a6ff' }}>
                 {viewMode.toUpperCase()}
@@ -100,5 +73,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

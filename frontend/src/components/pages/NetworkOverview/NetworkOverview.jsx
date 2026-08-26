@@ -246,7 +246,7 @@ export default function NetworkOverview({ viewMode }) {
               history[t].putere += val;
             });
 
-            [...dlArr, ...ulArr].forEach(item => {
+             [...dlArr, ...ulArr].forEach(item => {
               const t = extractTime(item);
 
               if (!t) {
@@ -349,9 +349,9 @@ export default function NetworkOverview({ viewMode }) {
   }
 
   return (
-    <div className="overview-page-wrapper">
+    <div className="overview-page-wrapper" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
-      <div className="filters-header">
+      <div className="filters-header" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
         <div className="filter-group">
 
@@ -427,9 +427,9 @@ export default function NetworkOverview({ viewMode }) {
 
       {viewMode === 'grafic' ? (
 
-        <div className="overview-container">
+        <div className="overview-container" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
-          <div className="kpi-grid">
+          <div className="kpi-grid" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
             <TotalGnbCard
               value={networkData?.total_gnb}

@@ -1,37 +1,87 @@
-/* Structura generală a aplicației ONAP */
+.overview-container,
+.energy-container,
+.capacity-container,
+.station-details-container,
+.overview-page-wrapper,
+.energy-page-wrapper,
+
+/* Forțează orice container principal din pagini să ocupe lățimea maximă a ecranului */
+.main-content-wrapper > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.capacity-page-wrapper {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
 .app-layout {
   display: flex;
   min-height: 100vh;
-  width: 100vw;
-  background-color: #0a0c10;
+  width: 100vw; /* Forțează lățimea ecranului complet */
+  max-width: 100%;
+  background-color: #0d1117;
   overflow-x: hidden;
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Zona principală de conținut */
 .main-content-wrapper {
-  margin-left: 280px;
-  width: calc(100% - 280px);
-  min-height: 100vh;
-  padding: 24px 32px;
+  flex: 1;
+  min-width: 0;
+  padding: 24px; 
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background-color: #0a0c10;
+  background-color: #0d1117;
   color: #c9d1d9;
+  transition: margin-left 0.3s ease;
 }
 
-/* Antetul paginii (Titlu ONAP + Mod Vizualizare) */
+.main-content-wrapper.sidebar-open {
+  margin-left: 280px;
+}
+
+.main-content-wrapper.sidebar-closed {
+  margin-left: 0;
+}
+
 .page-top-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.page-top-header h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
+.page-top-header h2 {
   color: #f0f6fc;
+  margin: 0;
+  text-transform: uppercase;
+  font-size: 20px;
+}
+
+.view-mode-badge {
+  font-size: 12px;
+  color: #8b949e;
+  background-color: #161b22;
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid #30363d;
+}
+
+@media (max-width: 1024px) {
+  .main-content-wrapper {
+    padding: 20px;
+  }
 }
