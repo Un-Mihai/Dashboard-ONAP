@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from collections.abc import Generator
 
-from file_manager import get_files, mark_file
-from crud import get_followed_indicators, save_batch
+from file_manager import get_all_files, mark_file
+from crud import get_followed_indicators, save_batch, check_file_is_parsed, save_file_name
 
 def clear_memory(elem):
     elem.clear()
@@ -15,7 +15,7 @@ def clear_memory(elem):
         parent.remove(elem)
 
 
-def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[str, str | int], None, None]:
+def extract_data(followed_metrics: list[str], file_path: str) -> Generator[dict[str, str | int], None, None]:
 
     namespace = os.getenv('XML_NAMESPACE')
     fileHeader_tag = f"{{{namespace}}}fileHeader"
@@ -110,22 +110,36 @@ def parse_file(followed_metrics: list[str], file_path: str) -> Generator[dict[st
             clear_memory(elem)
 
 
-def parse_files(db: Session) -> dict[str, list[dict[str, str | int]]]:
+def parse_file(db: Session, file_path: str) -> dict[str, list[dict[str, str | int]]]:
+
+    file_name = os.path.basename(file_path)
+    if check_file_is_parsed(db, file_name):
+        print("File {file_name} has already been parsed")
+        return
 
     batch_size = int(os.getenv('BATCH_SIZE', '1000'))
 
     followed_metrics = get_followed_indicators(db)
 
-    for file in get_files('UNPARSED'):
-        batch = []
+    batch = []
 
-        for telemetry_data in parse_file(followed_metrics, file):
-            batch.append(telemetry_data)
+    for telemetry_data in extract_data(followed_metrics, file_path):
+        batch.append(telemetry_data)
 
-            if len(batch) > batch_size:
-                save_batch(db, batch)
-
-        if batch:
+        if len(batch) > batch_size:
             save_batch(db, batch)
 
-        mark_file(file, 'PARSED')
+    if batch:
+        save_batch(db, batch)
+
+    save_file_name(db, file_name)
+
+def parse_missed_files(db: Session):
+    for file in get_all_files():
+        file_name = os.path.basename(file)
+
+        if check_file_is_parsed(db, file_name):
+            continue
+
+        print(f"MISSED FIle {file_name}")
+        parse_file(db, file)

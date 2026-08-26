@@ -5,11 +5,12 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 
 from database import get_db
-from parser import parse_files
+from parser import parse_file
 from teste import mark_all_files
 from crud import calculate, get_node_names, get_metric_data, save_new_metric
+from file_monitor import lifespan
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:5173",
@@ -38,7 +39,7 @@ def gest_test(name: str, formula: str, aggregation: str, units: str, db: Session
 
 @app.post("/api/parsefile")
 def parse_data(db: Session = Depends(get_db)):
-    parse_files(db)
+    parse_file(db)
 
 tz_ro = timezone(timedelta(hours=3))
 @app.post("/api/data")

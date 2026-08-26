@@ -5,16 +5,8 @@ script_path = Path(__file__).parent
 
 folder_path = Path(os.getenv('FILES_DIRECTORY'))
 
-def get_files(file_type: str = 'ALL') -> list[Path]:
-
-    if file_type == 'PARSED':
-        return [file.resolve for file in folder_path.glob('*_PARSED.xml')]
-
+def get_all_files() -> list[Path]:
     all_xml_files = folder_path.glob('*.xml')
-
-    if file_type == 'UNPARSED':
-        return [file.resolve() for file in all_xml_files if not file.name.endswith('_PARSED.xml')]
-
     return [file.resolve() for file in all_xml_files] 
 
 def mark_file(file_path: Path, file_type: str) -> None:

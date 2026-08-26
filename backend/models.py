@@ -33,3 +33,8 @@ class Indicators(Base):
     __tablename__ = "FOLLOWED_INDICATORS"
 
     measurement_type: Mapped[str] = mapped_column("MEASUREMENT_TYPE", String(100), primary_key=True)
+
+class ParsedFiles(Base):
+    __tablename__ = "PARSED_FILES"
+
+    file_name: Mapped[str] = mapped_column("FILE_NAME", String(200), primary_key=True)

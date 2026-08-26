@@ -40,12 +40,28 @@ def get_metric_data(db: Session, metric_name: str):
     else:
         raise Exception("Metric not found")
 
+def check_file_is_parsed(db: Session, file_name: str):
+    query = text("SELECT 1 FROM dbo.PARSED_FILES WHERE FILE_NAME = :FILE_NAME")
+
+    results = db.execute(query, {"FILE_NAME": file_name}).fetchone()
+
+    if results is not None:
+        return True
+
+    return False
+
 def save_batch(db:Session, batch) -> None:
 
     db.execute(insert(TelemetryData), batch)
     db.commit()
     
     batch.clear()
+
+def save_file_name(db: Session, file_name: str):
+    query = text("INSERT INTO dbo.PARSED_FILES (FILE_NAME) VALUES (:FILE_NAME)")
+
+    db.execute(query, {"FILE_NAME": file_name})
+    db.commit()
 
 def save_new_metric(db: Session, name: str, formula: str, aggregation: str, units: str):
     math_symbols = ['+', '-', '*', ' x ', '/', '(', ')']
