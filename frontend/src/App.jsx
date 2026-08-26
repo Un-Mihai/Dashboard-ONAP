@@ -11,7 +11,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState('grafic');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
- const renderContent = () => {
+  const renderContent = () => {
     let pageComponent = null;
 
     switch (activeTab) {
@@ -54,9 +54,17 @@ export default function App() {
 
       <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <div className="page-top-header">
-          <h2>
-            {activeTab.replace('-', ' ')}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="sidebar-toggle-inline-btn"
+            >
+              ☰
+            </button>
+            <h2>
+              {activeTab.replace('-', ' ')}
+            </h2>
+          </div>
 
           {activeTab !== 'alarms' && activeTab !== 'station' && (
             <span className="view-mode-badge">
