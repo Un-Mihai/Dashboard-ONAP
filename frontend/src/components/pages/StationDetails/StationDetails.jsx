@@ -31,7 +31,11 @@ export default function StationDetails() {
     "RFM_Energy_Consumption",
     "RFM_Energy_Monitoring",
     "DL_Traffic_Volume",
-    "UL_Traffic_Volume"
+    "UL_Traffic_Volume",
+    "DL_Throughput",
+    "UL_Throughput",
+    "PRB_DL",
+    "Peak_PRB"
   ];
 
   const formatDisplayTime = (timeStr, currentBucket) => {
@@ -115,6 +119,10 @@ export default function StationDetails() {
         const voltage = getValue("RFM_Energy_Monitoring");
         const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
         const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
+        const dlMbps = getValue("DL_Throughput");
+        const ulMbps = getValue("UL_Throughput");
+        const prb = getValue("PRB_DL");
+        const peakPrb = getValue("Peak_PRB");
         const kwh = power / 1000;
         const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
 
@@ -127,10 +135,10 @@ export default function StationDetails() {
           eff: +efficiency.toFixed(4),
           dlGb: +dlGb.toFixed(4),
           ulGb: +ulGb.toFixed(4),
-          dlMbps: 0,
-          ulMbps: 0,
-          prb: 0,
-          peakPrb: 0
+          dlMbps: +dlMbps.toFixed(2),
+          ulMbps: +ulMbps.toFixed(2),
+          prb: +prb.toFixed(2),
+          peakPrb: +peakPrb.toFixed(2)
         };
 
         setStationsData(prev => ({
@@ -168,6 +176,10 @@ export default function StationDetails() {
         const voltage = getValue("RFM_Energy_Monitoring");
         const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
         const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
+        const dlMbps = getValue("DL_Throughput");
+        const ulMbps = getValue("UL_Throughput");
+        const prb = getValue("PRB_DL");
+        const peakPrb = getValue("Peak_PRB");
         const kwh = power / 1000;
         const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
 
@@ -182,10 +194,10 @@ export default function StationDetails() {
             eff: +efficiency.toFixed(4),
             dlGb: +dlGb.toFixed(4),
             ulGb: +ulGb.toFixed(4),
-            dlMbps: 0,
-            ulMbps: 0,
-            prb: 0,
-            peakPrb: 0
+            dlMbps: +dlMbps.toFixed(2),
+            ulMbps: +ulMbps.toFixed(2),
+            prb: +prb.toFixed(2),
+            peakPrb: +peakPrb.toFixed(2)
           }
         }));
       } catch (error) {

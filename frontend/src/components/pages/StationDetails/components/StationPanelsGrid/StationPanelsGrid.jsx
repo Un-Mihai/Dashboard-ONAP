@@ -10,7 +10,7 @@ function MetricItem({ label, val1, val2, unit, isComparing, activeColor }) {
         {val1} {unit}
         {isComparing && (
           <span style={{ color: '#8b949e', fontSize: '12px', fontWeight: 'normal' }}>
-             / {val2} {unit}
+            / {val2} {unit}
           </span>
         )}
       </span>
@@ -20,9 +20,9 @@ function MetricItem({ label, val1, val2, unit, isComparing, activeColor }) {
 
 export default function StationPanelsGrid({ currentSt, compareSt, isComparing }) {
   const energyMetrics = [
-    { label: "Putere Medie (RU_AVG_PWR_USAGE)", val1: currentSt.power, val2: compareSt.power, unit: "W", color: "#d29922" },
-    { label: "Tensiune Intrare (Voltage)", val1: currentSt.voltage, val2: compareSt.voltage, unit: "V", color: "#d29922" },
-    { label: "Consum 15 min (kWh)", val1: currentSt.kwh, val2: compareSt.kwh, unit: "kWh", color: "#d29922" },
+    { label: "Putere Medie", val1: currentSt.power, val2: compareSt.power, unit: "", color: "#d29922" },
+    { label: "Tensiune", val1: currentSt.voltage, val2: compareSt.voltage, unit: "", color: "#d29922" },
+    { label: "Consum", val1: currentSt.kwh, val2: compareSt.kwh, unit: "", color: "#d29922" },
     { label: "Eficiență Energetică", val1: currentSt.eff, val2: compareSt.eff, unit: "GB/kWh", color: "#3fb950" }
   ];
 
