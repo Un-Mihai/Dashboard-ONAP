@@ -26,7 +26,6 @@ export default function NetworkOverview({ viewMode }) {
   const [startDate, setStartDate] = useState("2026-07-28");
   const [endDate, setEndDate] = useState("2026-07-28");
 
-  
   const startIso = `${startDate}T00:00:00+03:00`;
   const endIso = `${endDate}T23:59:59+03:00`;
 
@@ -76,29 +75,36 @@ export default function NetworkOverview({ viewMode }) {
     );
   };
 
- 
   const formatDisplayTime = (timeStr, currentBucket) => {
-    if (!timeStr) {
-      return "";
-    }
+    if (!timeStr) return "";
+    
+    const cleanTime = String(timeStr).trim();
 
-    const cleanTime = timeStr
-      .trim()
-      .replace(" ", "T");
-
-  
     if (currentBucket === '1d') {
-      const datePart = cleanTime.substring(0, 10);
-
-      if (datePart.length === 10) {
-        const zi = datePart.substring(8, 10);
-        const luna = datePart.substring(5, 7);
-
-        return `${zi}/${luna}`;
+      const datePart = cleanTime.split(' ')[0] || cleanTime.split('T')[0];
+      if (datePart) {
+        const parts = datePart.split('-');
+        if (parts.length >= 3) {
+          return `${parts[2]}.${parts[1]}`;
+        }
       }
+      return datePart.substring(0, 10);
     }
 
-    return cleanTime.substring(11, 16) || timeStr;
+    let timePart = "";
+    if (cleanTime.includes(' ')) {
+      timePart = cleanTime.split(' ')[1];
+    } else if (cleanTime.includes('T')) {
+      timePart = cleanTime.split('T')[1];
+    } else {
+      timePart = cleanTime;
+    }
+
+    if (timePart) {
+      return timePart.substring(0, 5);
+    }
+
+    return cleanTime;
   };
 
   useEffect(() => {
@@ -132,8 +138,6 @@ export default function NetworkOverview({ viewMode }) {
           const node = targetNodes[i];
 
           try {
-            // 1. DATE AGREGATE PENTRU CARDURI + TABEL
-
             const resAgg = await getTelemetryData(
               node,
               metricsList,
@@ -185,8 +189,6 @@ export default function NetworkOverview({ viewMode }) {
               active_alarms: availability < 100 ? 1 : 0
             });
 
-            // 2. SERIE TEMPORALĂ PENTRU GRAFIC
-
             const resSeries = await getTelemetryData(
               node,
               metricsList,
@@ -219,8 +221,6 @@ export default function NetworkOverview({ viewMode }) {
                 ? seriesData.UL_Traffic_Volume
                 : [];
 
-            // CONSUM ENERGIE
-
             powerArr.forEach(item => {
               const t = extractTime(item);
 
@@ -245,7 +245,6 @@ export default function NetworkOverview({ viewMode }) {
 
               history[t].putere += val;
             });
-            // TRAFIC DL + UL
 
             [...dlArr, ...ulArr].forEach(item => {
               const t = extractTime(item);
@@ -279,13 +278,10 @@ export default function NetworkOverview({ viewMode }) {
             );
           }
         }
-        // CALCUL DISPONIBILITATE MEDIE
 
         const avgAvail = stations.length
           ? +(totalAvailSum / stations.length).toFixed(1)
           : 0;
-
-        // DATE PENTRU CARDURI + TABEL
 
         setNetworkData({
           total_gnb:
@@ -306,15 +302,9 @@ export default function NetworkOverview({ viewMode }) {
           stations: stations
         });
 
-        // ==========================================
-        // DATE PENTRU GRAFIC
-        // ==========================================
-
-        // Sortăm direct după timestamp-ul primit
-        // de la backend, fără conversie timezone.
         const chartPoints = Object.values(history)
           .sort((a, b) =>
-            a.rawTime.localeCompare(b.rawTime)
+            String(a.rawTime).localeCompare(String(b.rawTime))
           )
           .map(item => ({
             time: formatDisplayTime(
@@ -350,7 +340,6 @@ export default function NetworkOverview({ viewMode }) {
     endDate
   ]);
 
-
   if (loading && !networkData) {
     return (
       <p className="status-loading">
@@ -362,11 +351,7 @@ export default function NetworkOverview({ viewMode }) {
   return (
     <div className="overview-page-wrapper">
 
-      {}
-
       <div className="filters-header">
-
-        {/* SELECTARE STAȚIE */}
 
         <div className="filter-group">
 
@@ -399,8 +384,6 @@ export default function NetworkOverview({ viewMode }) {
           </select>
 
         </div>
-
-        {/* SELECTARE INTERVAL DATE */}
 
         <div className="date-picker-group">
 
@@ -442,8 +425,6 @@ export default function NetworkOverview({ viewMode }) {
 
       </div>
 
-      {}
-
       {viewMode === 'grafic' ? (
 
         <div className="overview-container">
@@ -480,8 +461,6 @@ export default function NetworkOverview({ viewMode }) {
         </div>
 
       ) : (
-
-        
 
         <NetworkOverviewTable
           stations={networkData?.stations || []}

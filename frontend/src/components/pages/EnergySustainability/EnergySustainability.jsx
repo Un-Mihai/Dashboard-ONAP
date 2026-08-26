@@ -63,37 +63,59 @@ export default function EnergySustainability({ viewMode }) {
     return Number(val) || 0;
   };
 
+  // ==========================================
+  // EXTRAGERE TIMP FĂRĂ CONVERSIE TIMEZONE
+  // ==========================================
+
   const extractTime = (item) => {
     return (
-      item.bucket_time ||
-      item.time ||
-      item.timestamp ||
-      item.period_start_time ||
+      item?.bucket_time ||
+      item?.time ||
+      item?.timestamp ||
+      item?.period_start_time ||
       ""
     );
   };
 
-  // IMPORTANT:
-  // Nu mai folosim new Date() pentru afișarea orei.
-  // Luăm direct ora din bucket_time primit de la backend.
+  // ==========================================
+  // FORMATARE TIMP FĂRĂ new Date()
+  // ==========================================
+
   const formatDisplayTime = (timeStr, currentBucket) => {
     if (!timeStr) return "";
 
-    const cleanTime = timeStr.trim();
+    const cleanTime = String(timeStr).trim();
 
+    // Pentru granularitatea de 1 zi afișăm doar ziua și luna
     if (currentBucket === '1d') {
-      const datePart = cleanTime.substring(0, 10);
+      const datePart =
+        cleanTime.split(' ')[0] ||
+        cleanTime.split('T')[0];
 
-      if (datePart.length === 10) {
-        const [year, month, day] = datePart.split('-');
-        return `${day}/${month}`;
+      if (datePart) {
+        const parts = datePart.split('-');
+
+        if (parts.length >= 3) {
+          return `${parts[2]}.${parts[1]}`;
+        }
       }
+
+      return datePart.substring(0, 10);
     }
 
-    const timePart = cleanTime.substring(11, 16);
+    // Pentru 15m și 1h extragem direct ora din string
+    let timePart = "";
 
-    if (timePart.length === 5) {
-      return timePart;
+    if (cleanTime.includes(' ')) {
+      timePart = cleanTime.split(' ')[1];
+    } else if (cleanTime.includes('T')) {
+      timePart = cleanTime.split('T')[1];
+    } else {
+      timePart = cleanTime;
+    }
+
+    if (timePart) {
+      return timePart.substring(0, 5);
     }
 
     return cleanTime;
@@ -301,6 +323,10 @@ export default function EnergySustainability({ viewMode }) {
                 ? data.UL_Traffic_Volume
                 : [];
 
+            // ==========================================
+            // POWER
+            // ==========================================
+
             pArr.forEach(item => {
               const t = extractTime(item);
 
@@ -318,6 +344,10 @@ export default function EnergySustainability({ viewMode }) {
               );
             });
 
+            // ==========================================
+            // DL TRAFFIC
+            // ==========================================
+
             dlArr.forEach(item => {
               const t = extractTime(item);
 
@@ -334,6 +364,10 @@ export default function EnergySustainability({ viewMode }) {
                 val
               );
             });
+
+            // ==========================================
+            // UL TRAFFIC
+            // ==========================================
 
             ulArr.forEach(item => {
               const t = extractTime(item);
@@ -368,8 +402,8 @@ export default function EnergySustainability({ viewMode }) {
           Object.values(trendMap)
             .sort(
               (a, b) =>
-                a.rawTime.localeCompare(
-                  b.rawTime
+                String(a.rawTime).localeCompare(
+                  String(b.rawTime)
                 )
             )
             .map(item => {
@@ -387,6 +421,9 @@ export default function EnergySustainability({ viewMode }) {
                   : 0;
 
               return {
+                // IMPORTANT:
+                // Ora este extrasă direct din string.
+                // Nu folosim new Date().
                 time: formatDisplayTime(
                   item.rawTime,
                   chartBucketSize
@@ -463,6 +500,10 @@ export default function EnergySustainability({ viewMode }) {
     startDate,
     endDate
   ]);
+
+  // ==========================================
+  // LOADING
+  // ==========================================
 
   if (loading && !energyData) {
     return (
