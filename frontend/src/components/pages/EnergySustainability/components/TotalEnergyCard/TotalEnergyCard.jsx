@@ -6,7 +6,7 @@ export default function TotalEnergyCard({ value = 0 }) {
 
   return (
     <div className="energy-card total-energy-card">
-      <h4>Total Energy (kWh)</h4>
+      <h4>Total Energy </h4>
       <p className="kpi-value">{displayValue}</p>
     </div>
   );

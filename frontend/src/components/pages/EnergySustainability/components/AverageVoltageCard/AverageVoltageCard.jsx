@@ -6,7 +6,7 @@ export default function AverageVoltageCard({ value = 0 }) {
 
   return (
     <div className="energy-card average-voltage-card">
-      <h4>Voltage Mediu (V)</h4>
+      <h4>Voltage Mediu </h4>
       <p className="kpi-value">{displayValue}</p>
     </div>
   );

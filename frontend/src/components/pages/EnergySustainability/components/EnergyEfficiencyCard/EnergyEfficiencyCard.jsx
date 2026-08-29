@@ -6,7 +6,7 @@ export default function EnergyEfficiencyCard({ value = 0 }) {
 
   return (
     <div className="energy-card energy-efficiency-card">
-      <h4>Eficiență (GB / kWh)</h4>
+      <h4>Eficiență </h4>
       <p className="kpi-value success">{displayValue}</p>
     </div>
   );
