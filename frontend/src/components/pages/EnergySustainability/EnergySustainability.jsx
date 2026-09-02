@@ -20,7 +20,7 @@ export default function EnergySustainability({ viewMode }) {
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  // Doar data - automat folosim toată ziua
+  
   const [startDate, setStartDate] = useState("2026-07-28");
   const [endDate, setEndDate] = useState("2026-07-28");
 
@@ -78,7 +78,7 @@ export default function EnergySustainability({ viewMode }) {
   };
 
   // ==========================================
-  // FORMATARE TIMP FĂRĂ new Date()
+  // FORMATARE TIMP 
   // ==========================================
 
   const formatDisplayTime = (timeStr, currentBucket) => {
@@ -86,7 +86,7 @@ export default function EnergySustainability({ viewMode }) {
 
     const cleanTime = String(timeStr).trim();
 
-    // Pentru granularitatea de 1 zi afișăm doar ziua și luna
+    
     if (currentBucket === '1d') {
       const datePart =
         cleanTime.split(' ')[0] ||
@@ -103,7 +103,7 @@ export default function EnergySustainability({ viewMode }) {
       return datePart.substring(0, 10);
     }
 
-    // Pentru 15m și 1h extragem direct ora din string
+    
     let timePart = "";
 
     if (cleanTime.includes(' ')) {
@@ -421,9 +421,7 @@ export default function EnergySustainability({ viewMode }) {
                   : 0;
 
               return {
-                // IMPORTANT:
-                // Ora este extrasă direct din string.
-                // Nu folosim new Date().
+               
                 time: formatDisplayTime(
                   item.rawTime,
                   chartBucketSize

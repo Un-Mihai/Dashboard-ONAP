@@ -41,7 +41,7 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
       <div>
         <div className="sidebar-status-box">
           <span className="status-dot"></span>
-          <span>System Online • MSSQL Active</span>
+          <span>System Online </span>
         </div>
 
         <div className="view-mode-toggle">

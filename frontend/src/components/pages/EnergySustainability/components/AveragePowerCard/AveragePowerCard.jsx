@@ -6,7 +6,7 @@ export default function AveragePowerCard({ value = 0 }) {
 
   return (
     <div className="energy-card average-power-card">
-      <h4>Power Mediu (W)</h4>
+      <h4>Power Mediu </h4>
       <p className="kpi-value warning">{displayValue}</p>
     </div>
   );
