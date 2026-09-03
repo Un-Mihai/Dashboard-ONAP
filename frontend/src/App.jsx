@@ -4,12 +4,15 @@ import NetworkOverview from "./components/pages/NetworkOverview/NetworkOverview"
 import EnergySustainability from "./components/pages/EnergySustainability/EnergySustainability";
 import CapacityTraffic from "./components/pages/CapacityTraffic/CapacityTraffic";
 import StationDetails from "./components/pages/StationDetails/StationDetails";
+import ActiveAlarms from "./components/pages/ActiveAlarms/ActiveAlarms";
+import Login from "./components/pages/Login/Login";
 import './App.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewMode, setViewMode] = useState('grafic');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const renderContent = () => {
     let pageComponent = null;
@@ -41,6 +44,10 @@ export default function App() {
     );
   };
 
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -50,6 +57,7 @@ export default function App() {
         setViewMode={setViewMode}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        setIsAuthenticated={setIsAuthenticated}
       />
 
       <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
