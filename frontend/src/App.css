@@ -102,3 +102,51 @@
   border-color: #58a6ff;
   color: #f0f6fc;
 }
+
+/* Containerul ascuns de pe ecran, dar prezent pentru a lăsa graficele să se randeze */
+@media screen {
+  .print-only-container {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1200px; /* Forțăm o lățime standard pentru grafice (Recharts are nevoie de dimensiuni fizice) */
+    visibility: hidden;
+  }
+}
+
+/* Comportamentul EXCLUSIV pentru pagina de print */
+@media print {
+  /* Ascundem dashboard-ul normal */
+  .hide-on-print {
+    display: none !important;
+  }
+
+  /* Afișăm containerul cu paginile generate */
+  .print-only-container {
+    display: block !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    visibility: visible !important;
+    background-color: white !important;
+  }
+
+  /* Forțăm fiecare componentă exportată să înceapă pe o foaie nouă */
+  .print-page-break {
+    page-break-after: always;
+    break-after: page;
+    margin-bottom: 20px;
+  }
+
+  /* Ne asigurăm că fundalul e curat pentru print */
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  .station-card, .capacity-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

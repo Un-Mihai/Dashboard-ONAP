@@ -39,11 +39,6 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
       </div>
 
       <div>
-        <div className="sidebar-status-box">
-          <span className="status-dot"></span>
-          <span>System Online </span>
-        </div>
-
         <div className="view-mode-toggle">
           <button
             onClick={() => setViewMode('grafic')}
@@ -60,14 +55,13 @@ export default function Sidebar({ activeTab, setActiveTab, viewMode, setViewMode
           </button>
         </div>
 
-        {/* Butonul de Logout */}
         <button 
           onClick={() => setIsAuthenticated(false)}
           className="sidebar-menu-btn"
           style={{ marginTop: '15px', width: '100%', color: '#ff6b6b' }}
         >
-          <span className="menu-icon">🚪</span>
-          <span>Deconectare</span>
+          <span className="menu-icon">⏻</span>
+          <span>Log out</span>
         </button>
       </div>
     </div>
