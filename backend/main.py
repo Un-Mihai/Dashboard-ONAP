@@ -7,8 +7,9 @@ from datetime import datetime, timezone, timedelta
 from database import get_db
 from parser import parse_file
 from teste import mark_all_files
-from crud import calculate, get_node_names, get_metric_data, save_new_metric
+from crud import calculate, get_node_names, save_new_metric
 from file_monitor import lifespan
+from unit_converter import adapt_units
 
 app = FastAPI(lifespan=lifespan)
 
@@ -56,7 +57,7 @@ def get_data(node_name: str,
     for metric in metrics:
         results[metric] = calculate(db, node_name, metric, bucket_size, aggregate, start_time, end_time)
 
-    return results
+    return adapt_units(results)
 
 @app.post("/api/node_names")
 def get_all_node_names(start_time: datetime = datetime(2026, 6, 2, 0, 0, 0, tzinfo=tz_ro),

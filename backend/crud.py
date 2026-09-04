@@ -247,6 +247,5 @@ def calculate(db: Session, node_name: str, metric_name: str, bucket_size: str, a
     results_list = results_export.to_dict(orient='records')
     for elem in results_list:
         elem["Units"] = metric_data.get('UNITS')
-    #results_dict.append("Units": metric_data.get('UNITS'))
 
     return results_list
