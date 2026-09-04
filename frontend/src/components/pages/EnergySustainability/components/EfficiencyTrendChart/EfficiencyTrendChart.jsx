@@ -6,16 +6,32 @@ export default function EfficiencyTrendChart({
   data = [], 
   bucketSize = '15m', 
   onBucketChange, 
-  selectedStation = 'ALL' 
+  selectedStation = 'ALL',
+  selectedMetric = 'efficiency_trend'
 }) {
   const stationLabel = selectedStation === 'ALL' ? 'Toată Rețeaua' : `gNB_${selectedStation}`;
+
+  const getChartConfig = () => {
+    switch (selectedMetric) {
+      case 'power':
+        return { title: 'Consum Putere în Timp', dataKey: 'power', unit: ' W', color: '#e34c26', name: 'Putere (W)' };
+      case 'voltage':
+        return { title: 'Tensiune Medie în Timp', dataKey: 'voltage', unit: ' V', color: '#58a6ff', name: 'Tensiune (V)' };
+      case 'traffic':
+        return { title: 'Trafic Total în Timp', dataKey: 'traffic', unit: ' GB', color: '#1f6feb', name: 'Trafic (GB)' };
+      case 'efficiency_trend':
+      default:
+        return { title: 'Eficiența Energetică în Timp', dataKey: 'eficienta', unit: ' GB/kWh', color: '#2ea043', name: 'Eficiență (GB/kWh)' };
+    }
+  };
+
+  const config = getChartConfig();
 
   return (
     <div className="energy-card efficiency-trend-card">
       <div className="chart-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <h3 style={{ margin: 0 }}>Eficiența Energetică în Timp (GB per kWh) — {stationLabel}</h3>
+        <h3 style={{ margin: 0 }}>{config.title} ({config.unit.trim()}) — {stationLabel}</h3>
         
-        {/* Selector de granularitate dedicat graficului */}
         <div className="chart-granularity-control" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <label style={{ fontSize: '13px', color: '#8b949e' }}>Granularitate:</label>
           <select 
@@ -33,14 +49,14 @@ export default function EfficiencyTrendChart({
       <div className="chart-container-280">
         {data.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8b949e' }}>
-            Nu există date de eficiență pentru selecția curentă.
+            Nu există date pentru selecția curentă.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
               <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" unit=" GB/kWh" />
+              <YAxis stroke="#8b949e" unit={config.unit} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#161b22', 
@@ -52,9 +68,9 @@ export default function EfficiencyTrendChart({
               <Legend />
               <Line 
                 type="monotone" 
-                dataKey="eficienta" 
-                name="Eficiență (GB/kWh)" 
-                stroke="#2ea043" 
+                dataKey={config.dataKey} 
+                name={config.name} 
+                stroke={config.color} 
                 strokeWidth={2} 
                 dot={{ r: 4 }} 
                 activeDot={{ r: 6 }}

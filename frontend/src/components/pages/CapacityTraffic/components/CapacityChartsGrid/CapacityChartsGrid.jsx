@@ -79,7 +79,8 @@ export default function CapacityChartsGrid({
   bucketSize = '15m',
   onBucketChange,
   startTime = "2026-07-28T00:00:00+03:00",
-  endTime = "2026-07-28T23:59:59+03:00"
+  endTime = "2026-07-28T23:59:59+03:00",
+  selectedMetric = 'throughput'
 }) {
   const [throughputTrendData, setThroughputTrendData] = useState([]);
   const [prbTrendData, setPrbTrendData] = useState([]);
@@ -243,144 +244,155 @@ export default function CapacityChartsGrid({
 
   return (
     <div className="capacity-charts-grid">
-      <div className="capacity-card">
-        <div
-          className="chart-header-row"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '15px'
-          }}
-        >
-          <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL (KB/s)</h3>
-          {onBucketChange && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <label
+      {/* Afișăm graficul de Throughput dacă este selectat 'throughput' */}
+      {selectedMetric === 'throughput' && (
+        <div className="capacity-card">
+          <div
+            className="chart-header-row"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '15px'
+            }}
+          >
+            <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL (KB/s)</h3>
+            {onBucketChange && (
+              <div
                 style={{
-                  fontSize: '13px',
-                  color: '#8b949e'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
               >
-                Granularitate:
-              </label>
-              <select
-                value={bucketSize}
-                onChange={(e) => onBucketChange(e.target.value)}
-                className="filter-select"
-              >
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="1d">1d</option>
-              </select>
-            </div>
-          )}
+                <label
+                  style={{
+                    fontSize: '13px',
+                    color: '#8b949e'
+                  }}
+                >
+                  Granularitate:
+                </label>
+                <select
+                  value={bucketSize}
+                  onChange={(e) => onBucketChange(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="15m">15m</option>
+                  <option value="1h">1h</option>
+                  <option value="1d">1d</option>
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="chart-box-280">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={throughputTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+                <XAxis dataKey="time" stroke="#8b949e" />
+                <YAxis stroke="#8b949e" unit=" KB/s" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#161b22',
+                    border: '1px solid #30363d'
+                  }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="dlMbps"
+                  name="Throughput DL (KB/s)"
+                  stroke="#58a6ff"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="ulMbps"
+                  name="Throughput UL (KB/s)"
+                  stroke="#3fb950"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="chart-box-280">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={throughputTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-              <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" unit=" KB/s" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#161b22',
-                  border: '1px solid #30363d'
-                }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="dlMbps"
-                name="Throughput DL (KB/s)"
-                stroke="#58a6ff"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="ulMbps"
-                name="Throughput UL (KB/s)"
-                stroke="#3fb950"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      )}
 
-      <div className="capacity-card">
-        <div
-          className="chart-header-row"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '15px'
-          }}
-        >
-          <h3 style={{ margin: 0 }}>Grad de Ocupare Resurse (PRB DL % vs Peak)</h3>
-          {onBucketChange && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <label
+      {/* Afișăm graficul de PRB / Peak dacă este selectat 'prb' sau 'peak_prb' */}
+      {(selectedMetric === 'prb' || selectedMetric === 'peak_prb') && (
+        <div className="capacity-card">
+          <div
+            className="chart-header-row"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '15px'
+            }}
+          >
+            <h3 style={{ margin: 0 }}>
+              {selectedMetric === 'peak_prb' ? 'Peak PRB Maxim (%)' : 'Grad de Ocupare Resurse (PRB DL % vs Peak)'}
+            </h3>
+            {onBucketChange && (
+              <div
                 style={{
-                  fontSize: '13px',
-                  color: '#8b949e'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
               >
-                Granularitate:
-              </label>
-              <select
-                value={bucketSize}
-                onChange={(e) => onBucketChange(e.target.value)}
-                className="filter-select"
-              >
-                <option value="15m">15m</option>
-                <option value="1h">1h</option>
-                <option value="1d">1d</option>
-              </select>
-            </div>
-          )}
+                <label
+                  style={{
+                    fontSize: '13px',
+                    color: '#8b949e'
+                  }}
+                >
+                  Granularitate:
+                </label>
+                <select
+                  value={bucketSize}
+                  onChange={(e) => onBucketChange(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="15m">15m</option>
+                  <option value="1h">1h</option>
+                  <option value="1d">1d</option>
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="chart-box-280">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={prbTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+                <XAxis dataKey="time" stroke="#8b949e" />
+                <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                {/* Dacă e selectat Peak PRB, putem evidenția sau lăsa ambele în funcție de preferință; aici păstrăm zona completă */}
+                <Area
+                  type="monotone"
+                  dataKey="peakPrb"
+                  name="Peak PRB Slot Max %"
+                  stroke="#f85149"
+                  fill="#f8514922"
+                />
+                {selectedMetric === 'prb' && (
+                  <Area
+                    type="monotone"
+                    dataKey="prbDl"
+                    name="PRB DL Mediu %"
+                    stroke="#d29922"
+                    fill="#d2992222"
+                  />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-        <div className="chart-box-280">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={prbTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
-              <XAxis dataKey="time" stroke="#8b949e" />
-              <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="peakPrb"
-                name="Peak PRB Slot Max %"
-                stroke="#f85149"
-                fill="#f8514922"
-              />
-              <Area
-                type="monotone"
-                dataKey="prbDl"
-                name="PRB DL Mediu %"
-                stroke="#d29922"
-                fill="#d2992222"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

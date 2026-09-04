@@ -13,13 +13,12 @@ import './CapacityTraffic.css';
 
 export default function CapacityTraffic({ viewMode }) {
 
-  
-
   const [selectedStation, setSelectedStation] = useState('ALL');
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
- 
+  // Stare nouă pentru dropdown-ul de metrici de pe pagina Capacity & Traffic
+  const [selectedMetric, setSelectedMetric] = useState('throughput');
 
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
@@ -31,28 +30,22 @@ export default function CapacityTraffic({ viewMode }) {
     return d.toISOString().split('T')[0];
   });
 
-  // Trimitem automat toată ziua către backend
   const startIso = `${startDate}T00:00:00+03:00`;
   const endIso = `${endDate}T23:59:59+03:00`;
 
-  
-
   const [enableCongestionFilter, setEnableCongestionFilter] = useState(false);
   const [congestionThreshold, setCongestionThreshold] = useState(75);
-
-  
 
   const [stationsData, setStationsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const metrics = [
     "DL_Throughput",
+    "UL_Throughput",
     "PRB_DL",
     "PRB_UL",
     "Peak_PRB"
   ];
-
- 
 
   const extractVal = (data, key) => {
     if (
@@ -87,8 +80,6 @@ export default function CapacityTraffic({ viewMode }) {
     return Number(val) || 0;
   };
 
-
-
   useEffect(() => {
 
     const fetchTableData = async () => {
@@ -96,9 +87,6 @@ export default function CapacityTraffic({ viewMode }) {
       setIsLoading(true);
 
       try {
-
-      
-
         const nodesResponse = await getNodeNames();
 
         const rawNodes = nodesResponse.data;
@@ -109,8 +97,6 @@ export default function CapacityTraffic({ viewMode }) {
 
         setAvailableNodes(nodes);
 
-       
-
         const targetNodes =
           selectedStation === 'ALL'
             ? nodes
@@ -119,8 +105,6 @@ export default function CapacityTraffic({ viewMode }) {
                   String(n) ===
                   String(selectedStation)
               );
-
-        
 
         const stationPromises = targetNodes.map(
           async (nodeName, index) => {
@@ -180,8 +164,6 @@ export default function CapacityTraffic({ viewMode }) {
           }
         );
 
-       
-
         const results =
           await Promise.all(stationPromises);
 
@@ -217,8 +199,6 @@ export default function CapacityTraffic({ viewMode }) {
     endDate
   ]);
 
- 
-
   const displayedStations =
     enableCongestionFilter
       ? stationsData.filter(
@@ -228,18 +208,12 @@ export default function CapacityTraffic({ viewMode }) {
         )
       : stationsData;
 
-
   return (
     <div className="capacity-container">
 
-      {}
-
       <div className="filters-header">
 
-        {/* SELECTARE STAȚIE */}
-
         <div className="filter-group">
-
           <label htmlFor="capStationSelect">
             Filtrează Stație:
           </label>
@@ -252,7 +226,6 @@ export default function CapacityTraffic({ viewMode }) {
             }
             className="filter-select"
           >
-
             <option value="ALL">
               Toate Stațiile (Overview General)
             </option>
@@ -270,12 +243,9 @@ export default function CapacityTraffic({ viewMode }) {
 
         </div>
 
-        {}
-
         <div className="date-picker-group">
 
           <div className="filter-group">
-
             <label>
               De la:
             </label>
@@ -288,11 +258,9 @@ export default function CapacityTraffic({ viewMode }) {
               }
               className="filter-input-date"
             />
-
           </div>
 
           <div className="filter-group">
-
             <label>
               Până la:
             </label>
@@ -305,15 +273,11 @@ export default function CapacityTraffic({ viewMode }) {
               }
               className="filter-input-date"
             />
-
           </div>
 
         </div>
 
-        {}
-
         <div className="congestion-filter-box">
-
           <label
             style={{
               display: 'flex',
@@ -324,7 +288,6 @@ export default function CapacityTraffic({ viewMode }) {
               color: '#c9d1d9'
             }}
           >
-
             <input
               type="checkbox"
               checked={enableCongestionFilter}
@@ -337,9 +300,7 @@ export default function CapacityTraffic({ viewMode }) {
                 cursor: 'pointer'
               }}
             />
-
             Filtru Congestie PRB &ge;
-
           </label>
 
           <input
@@ -382,19 +343,37 @@ export default function CapacityTraffic({ viewMode }) {
 
       </div>
 
-      {}
-
       <CapacityKpiGrid
         selectedStation={selectedStation}
         startTime={startIso}
         endTime={endIso}
       />
 
-      {}
-
       {viewMode === 'grafic' ? (
 
         <>
+          {/* Bara cu titlul și dropdown-ul pentru metricele de capacitate */}
+          <div className="filters-header" style={{ margin: '20px 0 12px 0', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ color: '#c9d1d9', fontSize: '16px', margin: 0, fontWeight: '600' }}>
+              Evoluție Metrică Capacitate & Trafic
+            </h3>
+            
+            <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <label style={{ fontSize: '13px', color: '#8b949e', margin: 0 }}>
+                Alege metrica:
+              </label>
+              <select
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value)}
+                className="filter-select"
+                style={{ minWidth: '220px' }}
+              >
+                <option value="throughput">Throughput Rețea (DL & UL)</option>
+                <option value="prb">Grad Ocupare PRB (DL & UL)</option>
+                <option value="peak_prb">Peak PRB Maxim (%)</option>
+              </select>
+            </div>
+          </div>
 
           <CapacityChartsGrid
             selectedStation={selectedStation}
@@ -404,17 +383,16 @@ export default function CapacityTraffic({ viewMode }) {
             }
             startTime={startIso}
             endTime={endIso}
+            selectedMetric={selectedMetric}
           />
 
           <div className="capacity-card">
-
             <h3>
               Top Stații Congestionate
               (Ordonat după Ocuparea PRB DL)
             </h3>
 
             {isLoading ? (
-
               <p
                 style={{
                   color: '#8b949e',
@@ -423,14 +401,11 @@ export default function CapacityTraffic({ viewMode }) {
               >
                 Se încarcă datele rețelei...
               </p>
-
             ) : (
-
               <CapacityTable
                 stations={displayedStations}
                 viewMode={viewMode}
               />
-
             )}
 
           </div>
@@ -439,16 +414,12 @@ export default function CapacityTraffic({ viewMode }) {
 
       ) : (
 
-       
-
         <div className="capacity-card">
-
           <h3>
             Raport Detaliat Capacitate & Traffic Radio
           </h3>
 
           {isLoading ? (
-
             <p
               style={{
                 color: '#8b949e',
@@ -457,14 +428,11 @@ export default function CapacityTraffic({ viewMode }) {
             >
               Se încarcă datele rețelei...
             </p>
-
           ) : (
-
             <CapacityTable
               stations={displayedStations}
               viewMode={viewMode}
             />
-
           )}
 
         </div>

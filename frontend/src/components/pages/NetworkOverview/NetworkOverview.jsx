@@ -23,6 +23,8 @@ export default function NetworkOverview({ viewMode }) {
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
+  const [selectedMetric, setSelectedMetric] = useState('total_traffic');
+
   const [endDate, setEndDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
@@ -230,15 +232,14 @@ export default function NetworkOverview({ viewMode }) {
 
             powerArr.forEach(item => {
               const t = extractTime(item);
-
-              if (!t) {
-                return;
-              }
+              if (!t) return;
 
               if (!history[t]) {
                 history[t] = {
                   rawTime: t,
                   trafic: 0,
+                  dl: 0,
+                  ul: 0,
                   putere: 0
                 };
               }
@@ -253,36 +254,50 @@ export default function NetworkOverview({ viewMode }) {
               history[t].putere += val;
             });
 
-             [...dlArr, ...ulArr].forEach(item => {
+            dlArr.forEach(item => {
               const t = extractTime(item);
-
-              if (!t) {
-                return;
-              }
+              if (!t) return;
 
               if (!history[t]) {
                 history[t] = {
                   rawTime: t,
                   trafic: 0,
+                  dl: 0,
+                  ul: 0,
                   putere: 0
                 };
               }
 
-              const val = Number(
-                item.DL_Traffic_Volume ??
-                item.UL_Traffic_Volume ??
-                item.value ??
-                0
-              );
+              const val = Number(item.DL_Traffic_Volume ?? item.value ?? 0);
+              const valGb = val / (1024 ** 3);
 
-              history[t].trafic += val / (1024 ** 3);
+              history[t].dl += valGb;
+              history[t].trafic += valGb;
+            });
+
+            ulArr.forEach(item => {
+              const t = extractTime(item);
+              if (!t) return;
+
+              if (!history[t]) {
+                history[t] = {
+                  rawTime: t,
+                  trafic: 0,
+                  dl: 0,
+                  ul: 0,
+                  putere: 0
+                };
+              }
+
+              const val = Number(item.UL_Traffic_Volume ?? item.value ?? 0);
+              const valGb = val / (1024 ** 3);
+
+              history[t].ul += valGb;
+              history[t].trafic += valGb;
             });
 
           } catch (nodeErr) {
-            console.error(
-              `Eroare fetch nod ${node}:`,
-              nodeErr
-            );
+            console.error(`Eroare fetch nod ${node}:`, nodeErr);
           }
         }
 
@@ -291,48 +306,27 @@ export default function NetworkOverview({ viewMode }) {
           : 0;
 
         setNetworkData({
-          total_gnb:
-            selectedStation === 'ALL'
-              ? nodes.length
-              : 1,
-
+          total_gnb: selectedStation === 'ALL' ? nodes.length : 1,
           avg_availability: avgAvail,
-
-          total_traffic:
-            +(totalTraffic || 0).toFixed(2),
-
-          avg_power:
-            stations.length
-              ? +(totalPower / stations.length).toFixed(2)
-              : 0,
-
+          total_traffic: +(totalTraffic || 0).toFixed(2),
+          avg_power: stations.length ? +(totalPower / stations.length).toFixed(2) : 0,
           stations: stations
         });
 
         const chartPoints = Object.values(history)
-          .sort((a, b) =>
-            String(a.rawTime).localeCompare(String(b.rawTime))
-          )
+          .sort((a, b) => String(a.rawTime).localeCompare(String(b.rawTime)))
           .map(item => ({
-            time: formatDisplayTime(
-              item.rawTime,
-              chartBucketSize
-            ),
-
-            trafic:
-              +(item.trafic || 0).toFixed(2),
-
-            putere:
-              +(item.putere || 0).toFixed(2)
+            time: formatDisplayTime(item.rawTime, chartBucketSize),
+            trafic: +(item.trafic || 0).toFixed(2),
+            dl: +(item.dl || 0).toFixed(2),
+            ul: +(item.ul || 0).toFixed(2),
+            putere: +(item.putere || 0).toFixed(2)
           }));
 
         setChartData(chartPoints);
 
       } catch (error) {
-        console.error(
-          "Eroare încărcare date Network Overview:",
-          error
-        );
+        console.error("Eroare încărcare date Network Overview:", error);
       } finally {
         setLoading(false);
       }
@@ -340,12 +334,7 @@ export default function NetworkOverview({ viewMode }) {
 
     loadAllOverviewData();
 
-  }, [
-    selectedStation,
-    chartBucketSize,
-    startDate,
-    endDate
-  ]);
+  }, [selectedStation, chartBucketSize, startDate, endDate]);
 
   if (loading && !networkData) {
     return (
@@ -361,73 +350,42 @@ export default function NetworkOverview({ viewMode }) {
       <div className="filters-header" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
         <div className="filter-group">
-
-          <label htmlFor="stationSelect">
-            Filtrează Stație:
-          </label>
-
+          <label htmlFor="stationSelect">Filtrează Stație:</label>
           <select
             id="stationSelect"
             value={selectedStation}
-            onChange={(e) =>
-              setSelectedStation(e.target.value)
-            }
+            onChange={(e) => setSelectedStation(e.target.value)}
             className="filter-select"
           >
-
-            <option value="ALL">
-              Toate Stațiile (Overview General)
-            </option>
-
+            <option value="ALL">Toate Stațiile (Overview General)</option>
             {availableNodes.map((node) => (
-              <option
-                key={node}
-                value={node}
-              >
+              <option key={node} value={node}>
                 gNB_{node}
               </option>
             ))}
-
           </select>
-
         </div>
 
         <div className="date-picker-group">
-
           <div className="filter-group">
-
-            <label>
-              De la:
-            </label>
-
+            <label>De la:</label>
             <input
               type="date"
               value={startDate}
-              onChange={(e) =>
-                setStartDate(e.target.value)
-              }
+              onChange={(e) => setStartDate(e.target.value)}
               className="filter-input-date"
             />
-
           </div>
 
           <div className="filter-group">
-
-            <label>
-              Până la:
-            </label>
-
+            <label>Până la:</label>
             <input
               type="date"
               value={endDate}
-              onChange={(e) =>
-                setEndDate(e.target.value)
-              }
+              onChange={(e) => setEndDate(e.target.value)}
               className="filter-input-date"
             />
-
           </div>
-
         </div>
 
       </div>
@@ -437,32 +395,41 @@ export default function NetworkOverview({ viewMode }) {
         <div className="overview-container" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
           <div className="kpi-grid" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+            <TotalGnbCard value={networkData?.total_gnb} />
+            <AvailabilityCard value={networkData?.avg_availability} />
+            <TotalTrafficCard value={networkData?.total_traffic} />
+            <AveragePowerCard value={networkData?.avg_power} />
+          </div>
 
-            <TotalGnbCard
-              value={networkData?.total_gnb}
-            />
-
-            <AvailabilityCard
-              value={networkData?.avg_availability}
-            />
-
-            <TotalTrafficCard
-              value={networkData?.total_traffic}
-            />
-
-            <AveragePowerCard
-              value={networkData?.avg_power}
-            />
-
+          <div className="filters-header" style={{ margin: '20px 0 12px 0', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ color: '#c9d1d9', fontSize: '16px', margin: 0, fontWeight: '600' }}>
+              Evoluție Metrică Rețea
+            </h3>
+            
+            <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <label style={{ fontSize: '13px', color: '#8b949e', margin: 0 }}>
+                Alege metrica:
+              </label>
+              <select
+                value={selectedMetric}
+                onChange={(e) => setSelectedMetric(e.target.value)}
+                className="filter-select"
+                style={{ minWidth: '220px' }}
+              >
+                <option value="total_traffic">Trafic Total (DL + UL)</option>
+                <option value="dl">Trafic Downlink (DL)</option>
+                <option value="ul">Trafic Uplink (UL)</option>
+                <option value="putere">Putere Medie (W)</option>
+              </select>
+            </div>
           </div>
 
           <TrafficPowerChart
             data={chartData}
             bucketSize={chartBucketSize}
-            onBucketChange={(val) =>
-              setChartBucketSize(val)
-            }
+            onBucketChange={(val) => setChartBucketSize(val)}
             selectedStation={selectedStation}
+            selectedMetric={selectedMetric}
           />
 
         </div>
