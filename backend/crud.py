@@ -13,9 +13,18 @@ def get_followed_indicators(db: Session) -> list[str]:
 
     return [row._mapping.get("MEASUREMENT_TYPE") for row in results]
 
-def get_node_names(db: Session) -> list[str]:
-    query = text("SELECT DISTINCT NODE_NAME FROM dbo.ONAP_DATA")
-    results = db.execute(query).fetchall()
+def get_node_names(db: Session, start_time: datetime, end_time: datetime) -> list[str]:
+    query = text("""
+        SELECT DISTINCT NODE_NAME 
+        FROM dbo.ONAP_DATA 
+        WHERE :START_TIME <= END_TIME AND :END_TIME >= END_TIME""")
+
+    params = {
+        "START_TIME": start_time,
+        "END_TIME": end_time
+    }
+
+    results = db.execute(query, params).fetchall()
 
     return [row._mapping.get("NODE_NAME") for row in results]
 
@@ -226,10 +235,17 @@ def calculate(db: Session, node_name: str, metric_name: str, bucket_size: str, a
         elif aggregation_type == 'MAX':
             value = results.max()
 
-        return {"value": value.item() if hasattr(value, 'item') else value}
+        return {
+            "value": value.item() if hasattr(value, 'item') else value,
+            "units": metric_data.get('UNITS')
+        }
 
     results.name = metric_name
     results_export = results.reset_index()
     results_export['bucket_time'] = results_export['bucket_time'].astype(str)
 
-    return results_export.to_dict(orient='records')
+    results_list = results_export.to_dict(orient='records')
+    for elem in results_list:
+        elem["Units"] = metric_data.get('UNITS')
+
+    return results_list
