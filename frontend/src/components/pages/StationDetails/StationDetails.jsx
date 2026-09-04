@@ -10,7 +10,8 @@ import StationChartsGrid from './components/StationChartsGrid/StationChartsGrid'
 
 import './StationDetails.css';
 
-export default function StationDetails() {
+// 1. AICI AM MODIFICAT: Acum primim handleMultiPageExport de la App.jsx
+export default function StationDetails({ handleMultiPageExport }) {
   const [availableStations, setAvailableStations] = useState([]);
   const [stationsData, setStationsData] = useState({});
   const [stationHistoryData, setStationHistoryData] = useState([]);
@@ -292,10 +293,6 @@ export default function StationDetails() {
 
   const compareSt = stationsData[compareGnb] || currentSt;
 
-  const handleExportPDF = () => {
-    window.print();
-  };
-
   if (loading) {
     return (
       <p className="status-loading">
@@ -321,7 +318,9 @@ export default function StationDetails() {
         bucketSize={bucketSize}
         setBucketSize={setBucketSize}
         currentSt={currentSt}
-        handleExportPDF={handleExportPDF}
+        
+        
+        handleMultiPageExport={handleMultiPageExport} 
       />
 
       <StationPanelsGrid
