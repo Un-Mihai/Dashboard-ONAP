@@ -8,11 +8,17 @@ import ActiveAlarms from "./components/pages/ActiveAlarms/ActiveAlarms";
 import Login from "./components/pages/Login/Login";
 import './App.css';
 
-export default function App() {
+// Importăm starea globală (verifică să fie corectă calea către folderul context creat anterior)
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+// 1. Aceasta este aplicația ta reală, care acum are acces la memorie
+function DashboardContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [viewMode, setViewMode] = useState('grafic');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Scoatem userul și funcția de logout din "memoria" globală
+  const { user, logout } = useAuth();
 
   // --- LOGICA DE EXPORT MULTI-PAGINĂ ---
   const [isPrinting, setIsPrinting] = useState(false);
@@ -27,10 +33,9 @@ export default function App() {
     setPrintSelections(selections);
     setIsPrinting(true);
     
-    // Așteptăm 800ms pentru a lăsa graficele de pe celelalte pagini să se randeze în DOM, apoi printăm
     setTimeout(() => {
       window.print();
-      setIsPrinting(false); // După printare, închidem modul de print
+      setIsPrinting(false);
     }, 800);
   };
   // --------------------------------------
@@ -49,7 +54,6 @@ export default function App() {
         pageComponent = <CapacityTraffic viewMode={viewMode} />;
         break;
       case 'station':
-        // Transmitem funcția mai departe către StationDetails
         pageComponent = <StationDetails handleMultiPageExport={handleMultiPageExport} />;
         break;
       case 'alarms':
@@ -66,13 +70,14 @@ export default function App() {
     );
   };
 
-  if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => setIsAuthenticated(true)} />;
+  // 2. BARIERA DE SECURITATE: Dacă nu avem un user logat, afișăm direct pagina de Login
+  if (!user) {
+    return <Login />;
   }
 
+  // Dacă avem user logat (și e admin, validat în LoginForm), afișăm Dashboard-ul
   return (
     <>
-      {/* Containerul aplicației normale (ascuns în timpul printării efective) */}
       <div className={`app-layout ${isPrinting ? 'hide-on-print' : ''}`}>
         <Sidebar
           activeTab={activeTab}
@@ -81,7 +86,8 @@ export default function App() {
           setViewMode={setViewMode}
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
-          setIsAuthenticated={setIsAuthenticated}
+          // Am înlocuit setIsAuthenticated cu funcția reală de logout din context!
+          setIsAuthenticated={logout} 
         />
 
         <div className={`main-content-wrapper ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
@@ -108,7 +114,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Containerul ascuns pentru export (randat doar când se apasă butonul) */}
       {isPrinting && (
         <div className="print-only-container">
           {printSelections.overview && (
@@ -126,5 +131,14 @@ export default function App() {
         </div>
       )}
     </>
+  );
+}
+
+// 3. Componenta principală care "îmbracă" aplicația în furnizorul de context (AuthProvider)
+export default function App() {
+  return (
+    <AuthProvider>
+      <DashboardContent />
+    </AuthProvider>
   );
 }

@@ -9,7 +9,7 @@
   color: #c9d1d9;
 }
 
-/* Cardul de autentificare */
+
 .login-card {
   background-color: #161b22; 
   border: 1px solid #30363d; 
@@ -21,7 +21,7 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-/* Stiluri pentru Branding */
+
 .login-branding h1 {
   font-size: 24px;
   font-weight: 600;
@@ -68,7 +68,7 @@
 
 .input-group input:focus {
   border-color: #58a6ff;
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3); /* Un glow subtil */
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3); 
 }
 
 .login-btn {
@@ -85,5 +85,5 @@
 }
 
 .login-btn:hover {
-  background-color: #2ea043; /* Un verde puțin mai deschis la hover */
+  background-color: #2ea043; 
 }

@@ -8,7 +8,7 @@ const Login = ({ onLoginSuccess }) => {
     <div className="login-page-container">
       <div className="login-card">
         <LoginBranding />
-        {/* Pasăm funcția mai departe către formular */}
+        {}
         <LoginForm onLoginSuccess={onLoginSuccess} />
       </div>
     </div>
