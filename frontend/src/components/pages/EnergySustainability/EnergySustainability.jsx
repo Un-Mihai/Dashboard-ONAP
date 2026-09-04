@@ -21,8 +21,15 @@ export default function EnergySustainability({ viewMode }) {
   const [availableNodes, setAvailableNodes] = useState([]);
 
   
-  const [startDate, setStartDate] = useState("2026-07-28");
-  const [endDate, setEndDate] = useState("2026-07-28");
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
 
   const startIso = `${startDate}T00:00:00+03:00`;
   const endIso = `${endDate}T23:59:59+03:00`;

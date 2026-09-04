@@ -10,7 +10,6 @@ import StationChartsGrid from './components/StationChartsGrid/StationChartsGrid'
 
 import './StationDetails.css';
 
-// 1. AICI AM MODIFICAT: Acum primim handleMultiPageExport de la App.jsx
 export default function StationDetails({ handleMultiPageExport }) {
   const [availableStations, setAvailableStations] = useState([]);
   const [stationsData, setStationsData] = useState({});
@@ -21,8 +20,15 @@ export default function StationDetails({ handleMultiPageExport }) {
   const [isComparing, setIsComparing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const [startDate, setStartDate] = useState("2026-08-02");
-  const [endDate, setEndDate] = useState("2026-08-04");
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
   const [bucketSize, setBucketSize] = useState("1h");
 
   const startTime = `${startDate}T00:00:00+03:00`;
