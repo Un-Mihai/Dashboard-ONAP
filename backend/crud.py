@@ -226,10 +226,18 @@ def calculate(db: Session, node_name: str, metric_name: str, bucket_size: str, a
         elif aggregation_type == 'MAX':
             value = results.max()
 
-        return {"value": value.item() if hasattr(value, 'item') else value}
+        return {
+            "value": value.item() if hasattr(value, 'item') else value,
+            "units": metric_data.get('UNITS')
+        }
 
     results.name = metric_name
     results_export = results.reset_index()
     results_export['bucket_time'] = results_export['bucket_time'].astype(str)
 
-    return results_export.to_dict(orient='records')
+    results_list = results_export.to_dict(orient='records')
+    for elem in results_list:
+        elem["Units"] = metric_data.get('UNITS')
+    #results_dict.append("Units": metric_data.get('UNITS'))
+
+    return results_list
