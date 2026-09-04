@@ -59,8 +59,11 @@ def get_data(node_name: str,
     return results
 
 @app.post("/api/node_names")
-def get_all_node_names(db: Session = Depends(get_db)):
-    return get_node_names(db)
+def get_all_node_names(start_time: datetime = datetime(2026, 6, 2, 0, 0, 0, tzinfo=tz_ro),
+                       end_time: datetime = datetime(2026, 9, 4, 0, 0, 0, tzinfo=tz_ro), 
+                       db: Session = Depends(get_db)):
+    
+    return get_node_names(db, start_time, end_time)
 
 @app.post("/api/add_metric")
 def gest_test(name: str, formula: str, aggregation: str, units: str, db: Session = Depends(get_db)):

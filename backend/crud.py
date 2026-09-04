@@ -13,9 +13,18 @@ def get_followed_indicators(db: Session) -> list[str]:
 
     return [row._mapping.get("MEASUREMENT_TYPE") for row in results]
 
-def get_node_names(db: Session) -> list[str]:
-    query = text("SELECT DISTINCT NODE_NAME FROM dbo.ONAP_DATA")
-    results = db.execute(query).fetchall()
+def get_node_names(db: Session, start_time: datetime, end_time: datetime) -> list[str]:
+    query = text("""
+        SELECT DISTINCT NODE_NAME 
+        FROM dbo.ONAP_DATA 
+        WHERE :START_TIME <= END_TIME AND :END_TIME >= END_TIME""")
+
+    params = {
+        "START_TIME": start_time,
+        "END_TIME": end_time
+    }
+
+    results = db.execute(query, params).fetchall()
 
     return [row._mapping.get("NODE_NAME") for row in results]
 
