@@ -4,6 +4,13 @@ import {
   getTelemetryData
 } from "../../../api";
 
+import {
+  toGB,
+  extractMetric,
+  extractItemData,
+  clampPercent
+} from "../../../formatters";
+
 import StationHeader from './components/StationHeader/StationHeader';
 import StationPanelsGrid from './components/StationPanelsGrid/StationPanelsGrid';
 import StationChartsGrid from './components/StationChartsGrid/StationChartsGrid';
@@ -77,21 +84,61 @@ export default function StationDetails({ handleMultiPageExport }) {
     return cleanTime;
   };
 
+  const parseStationTelemetry = (gnbId, rawData) => {
+    const data = rawData || {};
+
+    const powerM = extractMetric(data, "RFM_Energy_Consumption");
+    const voltM = extractMetric(data, "RFM_Energy_Monitoring");
+    const dlM = extractMetric(data, "DL_Traffic_Volume");
+    const ulM = extractMetric(data, "UL_Traffic_Volume");
+    const dlTpM = extractMetric(data, "DL_Throughput");
+    const ulTpM = extractMetric(data, "UL_Throughput");
+    const prbM = extractMetric(data, "PRB_DL");
+    const peakPrbM = extractMetric(data, "Peak_PRB");
+
+    const power = powerM.value;
+    const voltage = voltM.value;
+    const dlGb = toGB(dlM.value, dlM.units);
+    const ulGb = toGB(ulM.value, ulM.units);
+    const dlMbps = dlTpM.value;
+    const ulMbps = ulTpM.value;
+    const prb = clampPercent(prbM.value);
+    const peakPrb = clampPercent(peakPrbM.value);
+
+    const kwh = power > 0 ? (power / 1000) * 24 : 0;
+    const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+
+    return {
+      id: gnbId,
+      name: `gNB_${gnbId}`,
+      power: +power.toFixed(2),
+      voltage: +voltage.toFixed(2),
+      kwh: +kwh.toFixed(4),
+      eff: +efficiency.toFixed(4),
+      dlGb: +dlGb.toFixed(4),
+      ulGb: +ulGb.toFixed(4),
+      dlMbps: +dlMbps.toFixed(2),
+      ulMbps: +ulMbps.toFixed(2),
+      prb: +prb.toFixed(2),
+      peakPrb: +peakPrb.toFixed(2)
+    };
+  };
+
   useEffect(() => {
     const loadStations = async () => {
       try {
         const { data: nodes } = await getNodeNames();
 
-        const stations = nodes.map(node => ({
+        const stations = (Array.isArray(nodes) ? nodes : (nodes?.nodes || [])).map(node => ({
           id: node,
           name: `gNB_${node}`
         }));
 
         setAvailableStations(stations);
 
-        if (nodes.length > 0) {
-          setSelectedGnb(nodes[0]);
-          setCompareGnb(nodes[1] || nodes[0]);
+        if (stations.length > 0) {
+          setSelectedGnb(stations[0].id);
+          setCompareGnb(stations[1]?.id || stations[0].id);
         }
       } catch (error) {
         console.error("Eroare la incarcarea statiilor:", error);
@@ -119,34 +166,7 @@ export default function StationDetails({ handleMultiPageExport }) {
           endTime
         );
 
-        const getValue = metric =>
-          Number(data[metric]?.value ?? data[metric]) || 0;
-
-        const power = getValue("RFM_Energy_Consumption");
-        const voltage = getValue("RFM_Energy_Monitoring");
-        const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
-        const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
-        const dlMbps = getValue("DL_Throughput");
-        const ulMbps = getValue("UL_Throughput");
-        const prb = getValue("PRB_DL");
-        const peakPrb = getValue("Peak_PRB");
-        const kwh = power / 1000;
-        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
-
-        const station = {
-          id: selectedGnb,
-          name: `gNB_${selectedGnb}`,
-          power: +power.toFixed(2),
-          voltage: +voltage.toFixed(2),
-          kwh: +kwh.toFixed(4),
-          eff: +efficiency.toFixed(4),
-          dlGb: +dlGb.toFixed(4),
-          ulGb: +ulGb.toFixed(4),
-          dlMbps: +dlMbps.toFixed(2),
-          ulMbps: +ulMbps.toFixed(2),
-          prb: +prb.toFixed(2),
-          peakPrb: +peakPrb.toFixed(2)
-        };
+        const station = parseStationTelemetry(selectedGnb, data);
 
         setStationsData(prev => ({
           ...prev,
@@ -176,36 +196,11 @@ export default function StationDetails({ handleMultiPageExport }) {
           endTime
         );
 
-        const getValue = metric =>
-          Number(data[metric]?.value ?? data[metric]) || 0;
-
-        const power = getValue("RFM_Energy_Consumption");
-        const voltage = getValue("RFM_Energy_Monitoring");
-        const dlGb = getValue("DL_Traffic_Volume") / (1024 ** 3);
-        const ulGb = getValue("UL_Traffic_Volume") / (1024 ** 3);
-        const dlMbps = getValue("DL_Throughput");
-        const ulMbps = getValue("UL_Throughput");
-        const prb = getValue("PRB_DL");
-        const peakPrb = getValue("Peak_PRB");
-        const kwh = power / 1000;
-        const efficiency = kwh > 0 ? (dlGb + ulGb) / kwh : 0;
+        const station = parseStationTelemetry(compareGnb, data);
 
         setStationsData(prev => ({
           ...prev,
-          [compareGnb]: {
-            id: compareGnb,
-            name: `gNB_${compareGnb}`,
-            power: +power.toFixed(2),
-            voltage: +voltage.toFixed(2),
-            kwh: +kwh.toFixed(4),
-            eff: +efficiency.toFixed(4),
-            dlGb: +dlGb.toFixed(4),
-            ulGb: +ulGb.toFixed(4),
-            dlMbps: +dlMbps.toFixed(2),
-            ulMbps: +ulMbps.toFixed(2),
-            prb: +prb.toFixed(2),
-            peakPrb: +peakPrb.toFixed(2)
-          }
+          [compareGnb]: station
         }));
       } catch (error) {
         console.error(`Eroare la comparatia cu ${compareGnb}:`, error);
@@ -239,9 +234,9 @@ export default function StationDetails({ handleMultiPageExport }) {
         const history = [];
 
         nodesData.forEach(node => {
-          const powerData = node["RFM_Energy_Consumption"] || [];
-          const prbData = node["PRB_DL"] || [];
-          const peakPrbData = node["Peak_PRB"] || [];
+          const powerData = Array.isArray(node?.RFM_Energy_Consumption) ? node.RFM_Energy_Consumption : [];
+          const prbData = Array.isArray(node?.PRB_DL) ? node.PRB_DL : [];
+          const peakPrbData = Array.isArray(node?.Peak_PRB) ? node.Peak_PRB : [];
           const length = Math.max(powerData.length, prbData.length, peakPrbData.length);
 
           for (let i = 0; i < length; i++) {
@@ -255,9 +250,12 @@ export default function StationDetails({ handleMultiPageExport }) {
               peakPrbItem.bucket_time ||
               "";
 
-            const power = Number(powerItem["RFM_Energy_Consumption"]) || 0;
-            const prb = Number(prbItem["PRB_DL"]) || 0;
-            const prbPeak = Number(peakPrbItem["Peak_PRB"]) || 0;
+            const { value: power } = extractItemData(powerItem, "RFM_Energy_Consumption");
+            const { value: rawPrb } = extractItemData(prbItem, "PRB_DL");
+            const { value: rawPeak } = extractItemData(peakPrbItem, "Peak_PRB");
+
+            const prb = clampPercent(rawPrb);
+            const prbPeak = clampPercent(rawPeak);
 
             const formattedTime = formatDisplayTime(rawTime, bucketSize);
 
@@ -324,8 +322,6 @@ export default function StationDetails({ handleMultiPageExport }) {
         bucketSize={bucketSize}
         setBucketSize={setBucketSize}
         currentSt={currentSt}
-        
-        
         handleMultiPageExport={handleMultiPageExport} 
       />
 

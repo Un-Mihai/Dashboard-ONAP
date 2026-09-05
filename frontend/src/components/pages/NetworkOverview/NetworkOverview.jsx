@@ -5,6 +5,13 @@ import {
   getTelemetryData
 } from "../../../api";
 
+import {
+  toGB,
+  extractMetric,
+  extractItemData,
+  clampPercent
+} from "../../../formatters";
+
 import TotalGnbCard from './components/TotalGnbCard/TotalGnbCard';
 import AvailabilityCard from './components/AvailabilityCard/AvailabilityCard';
 import TotalTrafficCard from './components/TotalTrafficCard/TotalTrafficCard';
@@ -45,41 +52,12 @@ export default function NetworkOverview({ viewMode }) {
     "UL_Traffic_Volume"
   ];
 
-  const extractVal = (data, key) => {
-    if (!data || data[key] === undefined || data[key] === null) {
-      return 0;
-    }
-
-    const val = data[key];
-
-    if (typeof val === 'number') {
-      return val;
-    }
-
-    if (Array.isArray(val) && val.length > 0) {
-      return Number(
-        val[0].value ??
-        val[0][key] ??
-        Object.values(val[0])[0]
-      ) || 0;
-    }
-
-    if (typeof val === 'object') {
-      return Number(
-        val.value ??
-        Object.values(val)[0]
-      ) || 0;
-    }
-
-    return Number(val) || 0;
-  };
-
   const extractTime = (item) => {
     return (
-      item.bucket_time ||
-      item.time ||
-      item.timestamp ||
-      item.period_start_time ||
+      item?.bucket_time ||
+      item?.time ||
+      item?.timestamp ||
+      item?.period_start_time ||
       ""
     );
   };
@@ -136,9 +114,13 @@ export default function NetworkOverview({ viewMode }) {
                 n => String(n) === String(selectedStation)
               );
 
-        let totalTraffic = 0;
+        let totalTrafficGB = 0;
         let totalPower = 0;
         let totalAvailSum = 0;
+        let validAvailCount = 0;
+        let validPowerCount = 0;
+
+        let detectedPowerUnit = 'W';
 
         const stations = [];
         const history = {};
@@ -158,44 +140,43 @@ export default function NetworkOverview({ viewMode }) {
 
             const aggData = resAgg.data || {};
 
-            const power = extractVal(
-              aggData,
-              "RFM_Energy_Consumption"
-            );
+            const powerData = extractMetric(aggData, "RFM_Energy_Consumption");
+            const dlData = extractMetric(aggData, "DL_Traffic_Volume");
+            const ulData = extractMetric(aggData, "UL_Traffic_Volume");
+            const availData = extractMetric(aggData, "Cell_Availability");
 
-            const dl = extractVal(
-              aggData,
-              "DL_Traffic_Volume"
-            );
+            if (powerData.units) detectedPowerUnit = powerData.units;
 
-            const ul = extractVal(
-              aggData,
-              "UL_Traffic_Volume"
-            );
+            const dlGb = toGB(dlData.value, dlData.units);
+            const ulGb = toGB(ulData.value, ulData.units);
+            const stationTrafficGb = dlGb + ulGb;
 
-            const availability =
-              extractVal(
-                aggData,
-                "Cell_Availability"
-              ) ||
-              (power > 0 || dl > 0 ? 100 : 0);
+            const stationPower = Number(powerData.value) || 0;
+            const stationAvail = clampPercent(availData.value);
 
-            const dlGb = dl / (1024 ** 3);
-            const ulGb = ul / (1024 ** 3);
-            const traffic = dlGb + ulGb;
+            totalTrafficGB += stationTrafficGb;
 
-            totalTraffic += traffic;
-            totalPower += power;
-            totalAvailSum += availability;
+            if (stationPower > 0) {
+              totalPower += stationPower;
+              validPowerCount++;
+            }
+
+            if (stationAvail > 0) {
+              totalAvailSum += stationAvail;
+              validAvailCount++;
+            }
 
             stations.push({
               id: i + 1,
               node_name: node,
               name: `gNB_${node}`,
-              availability: +(availability || 0).toFixed(1),
-              traffic: +(traffic || 0).toFixed(2),
-              power: +(power || 0).toFixed(2),
-              active_alarms: availability < 100 ? 1 : 0
+              availability: +(stationAvail || 0).toFixed(1),
+              availability_unit: '%',
+              traffic: +(stationTrafficGb || 0).toFixed(2),
+              traffic_unit: 'GB',
+              power: +(stationPower || 0).toFixed(2),
+              power_unit: detectedPowerUnit,
+              active_alarms: stationAvail < 99.8 ? 1 : 0
             });
 
             const resSeries = await getTelemetryData(
@@ -209,26 +190,17 @@ export default function NetworkOverview({ viewMode }) {
 
             const seriesData = resSeries.data || {};
 
-            const powerArr =
-              Array.isArray(
-                seriesData?.RFM_Energy_Consumption
-              )
-                ? seriesData.RFM_Energy_Consumption
-                : [];
+            const powerArr = Array.isArray(seriesData?.RFM_Energy_Consumption)
+              ? seriesData.RFM_Energy_Consumption
+              : [];
 
-            const dlArr =
-              Array.isArray(
-                seriesData?.DL_Traffic_Volume
-              )
-                ? seriesData.DL_Traffic_Volume
-                : [];
+            const dlArr = Array.isArray(seriesData?.DL_Traffic_Volume)
+              ? seriesData.DL_Traffic_Volume
+              : [];
 
-            const ulArr =
-              Array.isArray(
-                seriesData?.UL_Traffic_Volume
-              )
-                ? seriesData.UL_Traffic_Volume
-                : [];
+            const ulArr = Array.isArray(seriesData?.UL_Traffic_Volume)
+              ? seriesData.UL_Traffic_Volume
+              : [];
 
             powerArr.forEach(item => {
               const t = extractTime(item);
@@ -244,13 +216,7 @@ export default function NetworkOverview({ viewMode }) {
                 };
               }
 
-              const val =
-                Number(
-                  item.RFM_Energy_Consumption ??
-                  item.value ??
-                  Object.values(item)[1]
-                ) || 0;
-
+              const { value: val } = extractItemData(item, "RFM_Energy_Consumption");
               history[t].putere += val;
             });
 
@@ -268,8 +234,8 @@ export default function NetworkOverview({ viewMode }) {
                 };
               }
 
-              const val = Number(item.DL_Traffic_Volume ?? item.value ?? 0);
-              const valGb = val / (1024 ** 3);
+              const { value: val, units } = extractItemData(item, "DL_Traffic_Volume");
+              const valGb = toGB(val, units || dlData.units);
 
               history[t].dl += valGb;
               history[t].trafic += valGb;
@@ -289,8 +255,8 @@ export default function NetworkOverview({ viewMode }) {
                 };
               }
 
-              const val = Number(item.UL_Traffic_Volume ?? item.value ?? 0);
-              const valGb = val / (1024 ** 3);
+              const { value: val, units } = extractItemData(item, "UL_Traffic_Volume");
+              const valGb = toGB(val, units || ulData.units);
 
               history[t].ul += valGb;
               history[t].trafic += valGb;
@@ -301,15 +267,22 @@ export default function NetworkOverview({ viewMode }) {
           }
         }
 
-        const avgAvail = stations.length
-          ? +(totalAvailSum / stations.length).toFixed(1)
+        const avgAvail = validAvailCount > 0
+          ? +(totalAvailSum / validAvailCount).toFixed(1)
+          : 0;
+
+        const avgPower = validPowerCount > 0
+          ? +(totalPower / validPowerCount).toFixed(2)
           : 0;
 
         setNetworkData({
           total_gnb: selectedStation === 'ALL' ? nodes.length : 1,
           avg_availability: avgAvail,
-          total_traffic: +(totalTraffic || 0).toFixed(2),
-          avg_power: stations.length ? +(totalPower / stations.length).toFixed(2) : 0,
+          availability_unit: '%',
+          total_traffic: +(totalTrafficGB || 0).toFixed(2),
+          traffic_unit: 'GB',
+          avg_power: avgPower,
+          power_unit: detectedPowerUnit,
           stations: stations
         });
 
@@ -396,9 +369,18 @@ export default function NetworkOverview({ viewMode }) {
 
           <div className="kpi-grid" style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
             <TotalGnbCard value={networkData?.total_gnb} />
-            <AvailabilityCard value={networkData?.avg_availability} />
-            <TotalTrafficCard value={networkData?.total_traffic} />
-            <AveragePowerCard value={networkData?.avg_power} />
+            <AvailabilityCard 
+              value={networkData?.avg_availability} 
+              unit={networkData?.availability_unit} 
+            />
+            <TotalTrafficCard 
+              value={networkData?.total_traffic} 
+              unit={networkData?.traffic_unit} 
+            />
+            <AveragePowerCard 
+              value={networkData?.avg_power} 
+              unit={networkData?.power_unit} 
+            />
           </div>
 
           <div className="filters-header" style={{ margin: '20px 0 12px 0', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -419,7 +401,7 @@ export default function NetworkOverview({ viewMode }) {
                 <option value="total_traffic">Trafic Total (DL + UL)</option>
                 <option value="dl">Trafic Downlink (DL)</option>
                 <option value="ul">Trafic Uplink (UL)</option>
-                <option value="putere">Putere Medie (W)</option>
+                <option value="putere">Putere Medie ({networkData?.power_unit || 'W'})</option>
               </select>
             </div>
           </div>
@@ -430,6 +412,8 @@ export default function NetworkOverview({ viewMode }) {
             onBucketChange={(val) => setChartBucketSize(val)}
             selectedStation={selectedStation}
             selectedMetric={selectedMetric}
+            trafficUnit={networkData?.traffic_unit}
+            powerUnit={networkData?.power_unit}
           />
 
         </div>

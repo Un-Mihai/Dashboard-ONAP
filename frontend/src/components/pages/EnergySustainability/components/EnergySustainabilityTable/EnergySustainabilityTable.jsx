@@ -9,6 +9,12 @@ export default function EnergySustainabilityTable({ stationEnergyData = [] }) {
     return 'good';
   };
 
+  const firstStation = stationEnergyData[0];
+  const voltHeader = firstStation?.voltage_unit ? ` (${firstStation.voltage_unit})` : ' (V)';
+  const powerHeader = firstStation?.power_unit ? ` (${firstStation.power_unit})` : ' (W)';
+  const trafficHeader = firstStation?.traffic_unit ? ` (${firstStation.traffic_unit})` : ' (GB)';
+  const effHeader = firstStation?.efficiency_unit ? ` (${firstStation.efficiency_unit})` : ' (GB/kWh)';
+
   return (
     <div className="energy-card energy-table-card">
       <h3>Monitorizare RFM Energie per Stație</h3>
@@ -16,10 +22,10 @@ export default function EnergySustainabilityTable({ stationEnergyData = [] }) {
         <thead>
           <tr>
             <th>Stație ID</th>
-            <th>Tensiune (V)</th>
-            <th>Consum Mediu (W)</th>
-            <th>Trafic (GB)</th>
-            <th>Eficiență (GB/kWh)</th>
+            <th>Tensiune{voltHeader}</th>
+            <th>Consum Mediu{powerHeader}</th>
+            <th>Trafic{trafficHeader}</th>
+            <th>Eficiență{effHeader}</th>
           </tr>
         </thead>
         <tbody>
@@ -30,19 +36,26 @@ export default function EnergySustainabilityTable({ stationEnergyData = [] }) {
               </td>
             </tr>
           ) : (
-            stationEnergyData.map((st) => (
-              <tr key={st.id || st.node_name || st.name}>
-                <td>{st.name}</td>
-                <td>{st.voltage} V</td>
-                <td>{st.power} W</td>
-                <td>{st.traffic} GB</td>
-                <td>
-                  <span className={`efficiency-text ${getEfficiencyClass(st.efficiency)}`}>
-                    {st.efficiency} GB/kWh
-                  </span>
-                </td>
-              </tr>
-            ))
+            stationEnergyData.map((st) => {
+              const voltUnit = st.voltage_unit ? ` ${st.voltage_unit}` : ' V';
+              const powerUnit = st.power_unit ? ` ${st.power_unit}` : ' W';
+              const trafficUnit = st.traffic_unit ? ` ${st.traffic_unit}` : ' GB';
+              const effUnit = st.efficiency_unit ? ` ${st.efficiency_unit}` : ' GB/kWh';
+
+              return (
+                <tr key={st.id || st.node_name || st.name}>
+                  <td>{st.name}</td>
+                  <td>{st.voltage}{voltUnit}</td>
+                  <td>{st.power}{powerUnit}</td>
+                  <td>{st.traffic}{trafficUnit}</td>
+                  <td>
+                    <span className={`efficiency-text ${getEfficiencyClass(st.efficiency)}`}>
+                      {st.efficiency}{effUnit}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

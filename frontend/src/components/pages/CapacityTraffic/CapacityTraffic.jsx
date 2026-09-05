@@ -9,15 +9,18 @@ import {
   getTelemetryData
 } from "../../../api";
 
+import {
+  extractMetric,
+  clampPercent
+} from "../../../formatters";
+
 import './CapacityTraffic.css';
 
 export default function CapacityTraffic({ viewMode }) {
-
   const [selectedStation, setSelectedStation] = useState('ALL');
   const [chartBucketSize, setChartBucketSize] = useState('15m');
   const [availableNodes, setAvailableNodes] = useState([]);
 
-  // Stare nouă pentru dropdown-ul de metrici de pe pagina Capacity & Traffic
   const [selectedMetric, setSelectedMetric] = useState('throughput');
 
   const [endDate, setEndDate] = useState(() => {
@@ -47,48 +50,12 @@ export default function CapacityTraffic({ viewMode }) {
     "Peak_PRB"
   ];
 
-  const extractVal = (data, key) => {
-    if (
-      !data ||
-      data[key] === undefined ||
-      data[key] === null
-    ) {
-      return 0;
-    }
-
-    const val = data[key];
-
-    if (typeof val === 'number') {
-      return val;
-    }
-
-    if (Array.isArray(val) && val.length > 0) {
-      return Number(
-        val[0].value ??
-        val[0][key] ??
-        Object.values(val[0])[0]
-      ) || 0;
-    }
-
-    if (typeof val === 'object') {
-      return Number(
-        val.value ??
-        Object.values(val)[0]
-      ) || 0;
-    }
-
-    return Number(val) || 0;
-  };
-
   useEffect(() => {
-
     const fetchTableData = async () => {
-
       setIsLoading(true);
 
       try {
         const nodesResponse = await getNodeNames();
-
         const rawNodes = nodesResponse.data;
 
         const nodes = Array.isArray(rawNodes)
@@ -101,16 +68,15 @@ export default function CapacityTraffic({ viewMode }) {
           selectedStation === 'ALL'
             ? nodes
             : nodes.filter(
-                n =>
-                  String(n) ===
-                  String(selectedStation)
+                n => String(n) === String(selectedStation)
               );
+
+        let detectedThroughputUnit = 'Mbps';
+        let detectedPrbUnit = '%';
 
         const stationPromises = targetNodes.map(
           async (nodeName, index) => {
-
             try {
-
               const res = await getTelemetryData(
                 nodeName,
                 metrics,
@@ -122,91 +88,63 @@ export default function CapacityTraffic({ viewMode }) {
 
               const data = res.data || {};
 
-              const prbDl =
-                extractVal(data, "PRB_DL");
+              const prbDlMetric = extractMetric(data, "PRB_DL");
+              const prbUlMetric = extractMetric(data, "PRB_UL");
+              const peakPrbMetric = extractMetric(data, "Peak_PRB");
+              const throughputDlMetric = extractMetric(data, "DL_Throughput");
 
-              const prbUl =
-                extractVal(data, "PRB_UL");
+              if (throughputDlMetric.units) detectedThroughputUnit = throughputDlMetric.units;
+              if (prbDlMetric.units) detectedPrbUnit = prbDlMetric.units;
 
-              const peakPrb =
-                extractVal(data, "Peak_PRB");
-
-              const throughputDl =
-                extractVal(data, "DL_Throughput");
+              const prbDl = clampPercent(prbDlMetric.value);
+              const prbUl = clampPercent(prbUlMetric.value);
+              const peakPrb = clampPercent(peakPrbMetric.value);
+              const throughputDl = throughputDlMetric.value;
 
               return {
                 id: index + 1,
                 node_name: nodeName,
                 name: `gNB_${nodeName}`,
-
-                prbDl:
-                  +(prbDl || 0).toFixed(2),
-
-                prbUl:
-                  +(prbUl || 0).toFixed(2),
-
-                peakPrb:
-                  +(peakPrb || 0).toFixed(2),
-
-                throughputDl:
-                  +(throughputDl || 0).toFixed(2)
+                prbDl: +(prbDl || 0).toFixed(2),
+                prbUl: +(prbUl || 0).toFixed(2),
+                peakPrb: +(peakPrb || 0).toFixed(2),
+                prb_unit: detectedPrbUnit,
+                throughputDl: +(throughputDl || 0).toFixed(2),
+                throughput_unit: detectedThroughputUnit
               };
 
             } catch (err) {
-
               console.error(
-                `Eroare la extragerea datelor pentru stația ${nodeName}`,
+                `Eroare la extragerea datelor pentru stația ${nodeName}:`,
                 err
               );
-
               return null;
             }
           }
         );
 
-        const results =
-          await Promise.all(stationPromises);
+        const results = await Promise.all(stationPromises);
 
-        const validStations =
-          results
-            .filter(st => st !== null)
-            .sort(
-              (a, b) =>
-                b.prbDl - a.prbDl
-            );
+        const validStations = results
+          .filter(st => st !== null)
+          .sort((a, b) => b.prbDl - a.prbDl);
 
         setStationsData(validStations);
 
       } catch (error) {
-
-        console.error(
-          "Eroare majoră la încărcarea tabelului:",
-          error
-        );
-
+        console.error("Eroare majoră la încărcarea tabelului de capacitate:", error);
       } finally {
-
         setIsLoading(false);
-
       }
     };
 
     fetchTableData();
 
-  }, [
-    selectedStation,
-    startDate,
-    endDate
-  ]);
+  }, [selectedStation, startDate, endDate]);
 
-  const displayedStations =
-    enableCongestionFilter
-      ? stationsData.filter(
-          st =>
-            st.prbDl >=
-            Number(congestionThreshold || 0)
-        )
-      : stationsData;
+  const displayedStations = enableCongestionFilter
+    ? stationsData.filter(st => st.prbDl >= Number(congestionThreshold || 0))
+    : stationsData;
 
   return (
     <div className="capacity-container">
@@ -221,9 +159,7 @@ export default function CapacityTraffic({ viewMode }) {
           <select
             id="capStationSelect"
             value={selectedStation}
-            onChange={(e) =>
-              setSelectedStation(e.target.value)
-            }
+            onChange={(e) => setSelectedStation(e.target.value)}
             className="filter-select"
           >
             <option value="ALL">
@@ -231,46 +167,31 @@ export default function CapacityTraffic({ viewMode }) {
             </option>
 
             {availableNodes.map((node) => (
-              <option
-                key={node}
-                value={node}
-              >
+              <option key={node} value={node}>
                 gNB_{node}
               </option>
             ))}
-
           </select>
-
         </div>
 
         <div className="date-picker-group">
 
           <div className="filter-group">
-            <label>
-              De la:
-            </label>
-
+            <label>De la:</label>
             <input
               type="date"
               value={startDate}
-              onChange={(e) =>
-                setStartDate(e.target.value)
-              }
+              onChange={(e) => setStartDate(e.target.value)}
               className="filter-input-date"
             />
           </div>
 
           <div className="filter-group">
-            <label>
-              Până la:
-            </label>
-
+            <label>Până la:</label>
             <input
               type="date"
               value={endDate}
-              onChange={(e) =>
-                setEndDate(e.target.value)
-              }
+              onChange={(e) => setEndDate(e.target.value)}
               className="filter-input-date"
             />
           </div>
@@ -291,14 +212,8 @@ export default function CapacityTraffic({ viewMode }) {
             <input
               type="checkbox"
               checked={enableCongestionFilter}
-              onChange={(e) =>
-                setEnableCongestionFilter(
-                  e.target.checked
-                )
-              }
-              style={{
-                cursor: 'pointer'
-              }}
+              onChange={(e) => setEnableCongestionFilter(e.target.checked)}
+              style={{ cursor: 'pointer' }}
             />
             Filtru Congestie PRB &ge;
           </label>
@@ -308,11 +223,7 @@ export default function CapacityTraffic({ viewMode }) {
             min="0"
             max="100"
             value={congestionThreshold}
-            onChange={(e) =>
-              setCongestionThreshold(
-                e.target.value
-              )
-            }
+            onChange={(e) => setCongestionThreshold(e.target.value)}
             disabled={!enableCongestionFilter}
             style={{
               width: '55px',
@@ -323,22 +234,13 @@ export default function CapacityTraffic({ viewMode }) {
               padding: '3px 6px',
               textAlign: 'center',
               fontSize: '13px',
-              opacity:
-                enableCongestionFilter
-                  ? 1
-                  : 0.5
+              opacity: enableCongestionFilter ? 1 : 0.5
             }}
           />
 
-          <span
-            style={{
-              fontSize: '13px',
-              color: '#8b949e'
-            }}
-          >
+          <span style={{ fontSize: '13px', color: '#8b949e' }}>
             %
           </span>
-
         </div>
 
       </div>
@@ -350,9 +252,7 @@ export default function CapacityTraffic({ viewMode }) {
       />
 
       {viewMode === 'grafic' ? (
-
         <>
-          {/* Bara cu titlul și dropdown-ul pentru metricele de capacitate */}
           <div className="filters-header" style={{ margin: '20px 0 12px 0', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ color: '#c9d1d9', fontSize: '16px', margin: 0, fontWeight: '600' }}>
               Evoluție Metrică Capacitate & Trafic
@@ -378,9 +278,7 @@ export default function CapacityTraffic({ viewMode }) {
           <CapacityChartsGrid
             selectedStation={selectedStation}
             bucketSize={chartBucketSize}
-            onBucketChange={(val) =>
-              setChartBucketSize(val)
-            }
+            onBucketChange={(val) => setChartBucketSize(val)}
             startTime={startIso}
             endTime={endIso}
             selectedMetric={selectedMetric}
@@ -388,17 +286,11 @@ export default function CapacityTraffic({ viewMode }) {
 
           <div className="capacity-card">
             <h3>
-              Top Stații Congestionate
-              (Ordonat după Ocuparea PRB DL)
+              Top Stații Congestionate (Ordonat după Ocuparea PRB DL)
             </h3>
 
             {isLoading ? (
-              <p
-                style={{
-                  color: '#8b949e',
-                  padding: '20px 0'
-                }}
-              >
+              <p style={{ color: '#8b949e', padding: '20px 0' }}>
                 Se încarcă datele rețelei...
               </p>
             ) : (
@@ -407,25 +299,16 @@ export default function CapacityTraffic({ viewMode }) {
                 viewMode={viewMode}
               />
             )}
-
           </div>
-
         </>
-
       ) : (
-
         <div className="capacity-card">
           <h3>
             Raport Detaliat Capacitate & Traffic Radio
           </h3>
 
           {isLoading ? (
-            <p
-              style={{
-                color: '#8b949e',
-                padding: '20px 0'
-              }}
-            >
+            <p style={{ color: '#8b949e', padding: '20px 0' }}>
               Se încarcă datele rețelei...
             </p>
           ) : (
@@ -434,9 +317,7 @@ export default function CapacityTraffic({ viewMode }) {
               viewMode={viewMode}
             />
           )}
-
         </div>
-
       )}
 
     </div>

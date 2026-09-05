@@ -15,9 +15,13 @@ import {
   getNodeNames,
   getTelemetryData
 } from "../../../../../api";
+import {
+  extractItemData,
+  clampPercent
+} from "../../../../../formatters";
 import './CapacityChartsGrid.css';
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, throughputUnit = 'KB/s' }) => {
   if (active && payload && payload.length) {
     const peakValue = payload.find(p => p.dataKey === 'peakPrb')?.value;
     const isPeakAlert = peakValue >= 100;
@@ -41,20 +45,23 @@ const CustomTooltip = ({ active, payload, label }) => {
           {label}
         </p>
 
-        {payload.map((entry, index) => (
-          <p
-            key={index}
-            style={{
-              margin: 0,
-              color: entry.color,
-              fontSize: '13px',
-              fontWeight: 'bold'
-            }}
-          >
-            {entry.name}: {Number(entry.value).toFixed(2)}
-            {entry.dataKey === 'prbDl' || entry.dataKey === 'peakPrb' ? '%' : ' KB/s'}
-          </p>
-        ))}
+        {payload.map((entry, index) => {
+          const isPercent = entry.dataKey === 'prbDl' || entry.dataKey === 'peakPrb';
+          const unit = isPercent ? '%' : ` ${throughputUnit}`;
+          return (
+            <p
+              key={index}
+              style={{
+                margin: 0,
+                color: entry.color,
+                fontSize: '13px',
+                fontWeight: 'bold'
+              }}
+            >
+              {entry.name}: {Number(entry.value).toFixed(2)}{unit}
+            </p>
+          );
+        })}
 
         {isPeakAlert && (
           <p
@@ -84,6 +91,7 @@ export default function CapacityChartsGrid({
 }) {
   const [throughputTrendData, setThroughputTrendData] = useState([]);
   const [prbTrendData, setPrbTrendData] = useState([]);
+  const [throughputUnit, setThroughputUnit] = useState('KB/s');
 
   const extractTime = (item) => {
     return (
@@ -145,6 +153,7 @@ export default function CapacityChartsGrid({
 
         const throughputMap = {};
         const prbMap = {};
+        let detectedUnit = 'KB/s';
 
         const getOrCreateThroughput = (time) => {
           if (!throughputMap[time]) {
@@ -177,8 +186,9 @@ export default function CapacityChartsGrid({
             dlData.forEach(item => {
               const t = extractTime(item);
               if (!t) return;
+              const { value, units } = extractItemData(item, "DL_Throughput");
+              if (units) detectedUnit = units;
               const entry = getOrCreateThroughput(t);
-              const value = Number(item.DL_Throughput ?? item.value ?? 0) || 0;
               entry.dlMbps += value;
             });
 
@@ -186,8 +196,9 @@ export default function CapacityChartsGrid({
             ulData.forEach(item => {
               const t = extractTime(item);
               if (!t) return;
+              const { value, units } = extractItemData(item, "UL_Throughput");
+              if (units) detectedUnit = units;
               const entry = getOrCreateThroughput(t);
-              const value = Number(item.UL_Throughput ?? item.value ?? 0) || 0;
               entry.ulMbps += value;
             });
 
@@ -195,9 +206,9 @@ export default function CapacityChartsGrid({
             prbDlData.forEach(item => {
               const t = extractTime(item);
               if (!t) return;
+              const { value } = extractItemData(item, "PRB_DL");
               const entry = getOrCreatePrb(t);
-              const value = Number(item.PRB_DL ?? item.value ?? 0) || 0;
-              entry.prbDl += value;
+              entry.prbDl += clampPercent(value);
               entry.count += 1;
             });
 
@@ -205,16 +216,19 @@ export default function CapacityChartsGrid({
             peakPrbData.forEach(item => {
               const t = extractTime(item);
               if (!t) return;
+              const { value } = extractItemData(item, "Peak_PRB");
+              const capped = clampPercent(value);
               const entry = getOrCreatePrb(t);
-              const value = Number(item.Peak_PRB ?? item.value ?? 0) || 0;
-              if (value > entry.peakPrb) {
-                entry.peakPrb = value;
+              if (capped > entry.peakPrb) {
+                entry.peakPrb = capped;
               }
             });
           } catch (error) {
             console.error(`Eroare la încărcarea datelor pentru stația ${node}:`, error);
           }
         }
+
+        setThroughputUnit(detectedUnit);
 
         const formattedThroughputData = Object.values(throughputMap)
           .sort(sortByTime)
@@ -244,7 +258,7 @@ export default function CapacityChartsGrid({
 
   return (
     <div className="capacity-charts-grid">
-      {/* Afișăm graficul de Throughput dacă este selectat 'throughput' */}
+      {/* Graficul de Throughput */}
       {selectedMetric === 'throughput' && (
         <div className="capacity-card">
           <div
@@ -256,7 +270,7 @@ export default function CapacityChartsGrid({
               marginBottom: '15px'
             }}
           >
-            <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL (KB/s)</h3>
+            <h3 style={{ margin: 0 }}>Evoluție Throughput DL vs. UL ({throughputUnit})</h3>
             {onBucketChange && (
               <div
                 style={{
@@ -290,18 +304,15 @@ export default function CapacityChartsGrid({
               <LineChart data={throughputTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
                 <XAxis dataKey="time" stroke="#8b949e" />
-                <YAxis stroke="#8b949e" unit=" KB/s" />
+                <YAxis stroke="#8b949e" unit={` ${throughputUnit}`} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#161b22',
-                    border: '1px solid #30363d'
-                  }}
+                  content={<CustomTooltip throughputUnit={throughputUnit} />}
                 />
                 <Legend />
                 <Line
                   type="monotone"
                   dataKey="dlMbps"
-                  name="Throughput DL (KB/s)"
+                  name={`Throughput DL (${throughputUnit})`}
                   stroke="#58a6ff"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -309,7 +320,7 @@ export default function CapacityChartsGrid({
                 <Line
                   type="monotone"
                   dataKey="ulMbps"
-                  name="Throughput UL (KB/s)"
+                  name={`Throughput UL (${throughputUnit})`}
                   stroke="#3fb950"
                   strokeWidth={2}
                   dot={{ r: 3 }}
@@ -320,7 +331,7 @@ export default function CapacityChartsGrid({
         </div>
       )}
 
-      {/* Afișăm graficul de PRB / Peak dacă este selectat 'prb' sau 'peak_prb' */}
+      {/* Graficul de PRB / Peak */}
       {(selectedMetric === 'prb' || selectedMetric === 'peak_prb') && (
         <div className="capacity-card">
           <div
@@ -369,9 +380,8 @@ export default function CapacityChartsGrid({
                 <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
                 <XAxis dataKey="time" stroke="#8b949e" />
                 <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip throughputUnit={throughputUnit} />} />
                 <Legend />
-                {/* Dacă e selectat Peak PRB, putem evidenția sau lăsa ambele în funcție de preferință; aici păstrăm zona completă */}
                 <Area
                   type="monotone"
                   dataKey="peakPrb"

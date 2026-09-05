@@ -1,12 +1,13 @@
 import React from 'react';
 import './TotalEnergyCard.css';
 
-export default function TotalEnergyCard({ value = 0 }) {
-  const displayValue = typeof value === 'number' ? `${value} kWh` : value;
+export default function TotalEnergyCard({ value = 0, unit = 'kWh' }) {
+  const displayUnit = unit ? ` ${unit}` : '';
+  const displayValue = typeof value === 'number' ? `${value}${displayUnit}` : value;
 
   return (
     <div className="energy-card total-energy-card">
-      <h4>Total Energy </h4>
+      <h4>Total Energy</h4>
       <p className="kpi-value">{displayValue}</p>
     </div>
   );

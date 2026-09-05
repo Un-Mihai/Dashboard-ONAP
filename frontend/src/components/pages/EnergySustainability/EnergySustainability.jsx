@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getNodeNames, getTelemetryData } from "../../../api";
+import { toGB, extractMetric, extractItemData } from "../../../formatters";
 
 import TotalEnergyCard from './components/TotalEnergyCard/TotalEnergyCard';
 import AveragePowerCard from './components/AveragePowerCard/AveragePowerCard';
@@ -40,35 +41,6 @@ export default function EnergySustainability({ viewMode }) {
     "DL_Traffic_Volume",
     "UL_Traffic_Volume"
   ];
-
-  const extractVal = (data, key) => {
-    if (!data || data[key] === undefined || data[key] === null) {
-      return 0;
-    }
-
-    const val = data[key];
-
-    if (typeof val === 'number') {
-      return val;
-    }
-
-    if (Array.isArray(val) && val.length > 0) {
-      return Number(
-        val[0].value ??
-        val[0][key] ??
-        Object.values(val[0])[0]
-      ) || 0;
-    }
-
-    if (typeof val === 'object') {
-      return Number(
-        val.value ??
-        Object.values(val)[0]
-      ) || 0;
-    }
-
-    return Number(val) || 0;
-  };
 
   const extractTime = (item) => {
     return (
@@ -138,6 +110,9 @@ export default function EnergySustainability({ viewMode }) {
                 n => String(n) === String(selectedStation)
               );
 
+        let detectedPowerUnit = 'W';
+        let detectedVoltageUnit = 'V';
+
         const stationPromises = targetNodes.map(
           async (nodeName, index) => {
             try {
@@ -150,46 +125,39 @@ export default function EnergySustainability({ viewMode }) {
                 endIso
               );
 
-              const power = extractVal(
-                data,
-                "RFM_Energy_Consumption"
-              );
+              const powerMetric = extractMetric(data, "RFM_Energy_Consumption");
+              const voltageMetric = extractMetric(data, "RFM_Energy_Monitoring");
+              const dlMetric = extractMetric(data, "DL_Traffic_Volume");
+              const ulMetric = extractMetric(data, "UL_Traffic_Volume");
 
-              const voltage = extractVal(
-                data,
-                "RFM_Energy_Monitoring"
-              );
+              if (powerMetric.units) detectedPowerUnit = powerMetric.units;
+              if (voltageMetric.units) detectedVoltageUnit = voltageMetric.units;
 
-              const dl = extractVal(
-                data,
-                "DL_Traffic_Volume"
-              );
+              const power = powerMetric.value;
+              const voltage = voltageMetric.value;
 
-              const ul = extractVal(
-                data,
-                "UL_Traffic_Volume"
-              );
+              const dlGb = toGB(dlMetric.value, dlMetric.units);
+              const ulGb = toGB(ulMetric.value, ulMetric.units);
+              const trafficGb = dlGb + ulGb;
 
-              const traffic =
-                (dl + ul) / (1024 ** 3);
+              const energyKwh = power > 0 ? (power / 1000) * 24 : 0;
 
-              const energy = power / 1000;
-
-              const efficiency =
-                energy > 0
-                  ? traffic / energy
-                  : 0;
+              const efficiency = energyKwh > 0 ? trafficGb / energyKwh : 0;
 
               return {
                 id: index + 1,
                 node_name: nodeName,
                 name: `gNB_${nodeName}`,
-
                 voltage: +(voltage || 0).toFixed(2),
+                voltage_unit: detectedVoltageUnit,
                 power: +(power || 0).toFixed(2),
-                traffic: +(traffic || 0).toFixed(4),
+                power_unit: detectedPowerUnit,
+                traffic: +(trafficGb || 0).toFixed(4),
+                traffic_unit: 'GB',
                 efficiency: +(efficiency || 0).toFixed(4),
-                energy: +(energy || 0).toFixed(4)
+                efficiency_unit: 'GB/kWh',
+                energy: +(energyKwh || 0).toFixed(4),
+                energy_unit: 'kWh'
               };
 
             } catch (error) {
@@ -197,61 +165,44 @@ export default function EnergySustainability({ viewMode }) {
                 `Eroare agregare pentru stația ${nodeName}:`,
                 error
               );
-
               return null;
             }
           }
         );
 
-        const validStations =
-          (await Promise.all(stationPromises))
-            .filter(Boolean);
+        const validStations = (await Promise.all(stationPromises)).filter(Boolean);
 
-        const totals = validStations.reduce(
-          (acc, station) => ({
-            energy:
-              acc.energy + station.energy,
+        let sumEnergy = 0;
+        let sumPower = 0;
+        let sumVoltage = 0;
+        let sumTraffic = 0;
+        let validVoltCount = 0;
+        let validPowerCount = 0;
 
-            power:
-              acc.power + station.power,
-
-            voltage:
-              acc.voltage + station.voltage,
-
-            traffic:
-              acc.traffic + station.traffic
-          }),
-          {
-            energy: 0,
-            power: 0,
-            voltage: 0,
-            traffic: 0
+        validStations.forEach(st => {
+          sumEnergy += st.energy;
+          sumTraffic += st.traffic;
+          if (st.power > 0) {
+            sumPower += st.power;
+            validPowerCount++;
           }
-        );
+          if (st.voltage > 0) {
+            sumVoltage += st.voltage;
+            validVoltCount++;
+          }
+        });
 
-        const count = validStations.length;
-
-        const topConsumersData =
-          [...validStations]
-            .sort(
-              (a, b) =>
-                b.power - a.power
-            )
-            .slice(0, 5)
-            .map(
-              ({ name, power }) => ({
-                name,
-                power
-              })
-            );
+        const topConsumersData = [...validStations]
+          .sort((a, b) => b.power - a.power)
+          .slice(0, 5)
+          .map(({ name, power }) => ({
+            name,
+            power
+          }));
 
         const trendMap = {};
 
-        const addTrendVal = (
-          t,
-          key,
-          val
-        ) => {
+        const addTrendVal = (t, key, val) => {
           if (!t) return;
 
           if (!trendMap[t]) {
@@ -264,194 +215,93 @@ export default function EnergySustainability({ viewMode }) {
             };
           }
 
-          trendMap[t][key] +=
-            Number(val) || 0;
+          trendMap[t][key] += Number(val) || 0;
         };
 
         for (const nodeName of targetNodes) {
           try {
-            const { data } =
-              await getTelemetryData(
-                nodeName,
-                metrics,
-                chartBucketSize,
-                false,
-                startIso,
-                endIso
-              );
+            const { data } = await getTelemetryData(
+              nodeName,
+              metrics,
+              chartBucketSize,
+              false,
+              startIso,
+              endIso
+            );
 
-            const pArr =
-              Array.isArray(
-                data?.RFM_Energy_Consumption
-              )
-                ? data.RFM_Energy_Consumption
-                : [];
-
-            const vArr =
-              Array.isArray(
-                data?.RFM_Energy_Monitoring
-              )
-                ? data.RFM_Energy_Monitoring
-                : [];
-
-            const dlArr =
-              Array.isArray(
-                data?.DL_Traffic_Volume
-              )
-                ? data.DL_Traffic_Volume
-                : [];
-
-            const ulArr =
-              Array.isArray(
-                data?.UL_Traffic_Volume
-              )
-                ? data.UL_Traffic_Volume
-                : [];
+            const pArr = Array.isArray(data?.RFM_Energy_Consumption) ? data.RFM_Energy_Consumption : [];
+            const vArr = Array.isArray(data?.RFM_Energy_Monitoring) ? data.RFM_Energy_Monitoring : [];
+            const dlArr = Array.isArray(data?.DL_Traffic_Volume) ? data.DL_Traffic_Volume : [];
+            const ulArr = Array.isArray(data?.UL_Traffic_Volume) ? data.UL_Traffic_Volume : [];
 
             pArr.forEach(item => {
               const t = extractTime(item);
-              const val =
-                Number(
-                  item.RFM_Energy_Consumption ??
-                  item.value ??
-                  Object.values(item)[1]
-                ) || 0;
-
+              const { value: val } = extractItemData(item, "RFM_Energy_Consumption");
               addTrendVal(t, "power", val);
             });
 
             vArr.forEach(item => {
               const t = extractTime(item);
-              const val =
-                Number(
-                  item.RFM_Energy_Monitoring ??
-                  item.value ??
-                  Object.values(item)[1]
-                ) || 0;
-
+              const { value: val } = extractItemData(item, "RFM_Energy_Monitoring");
               addTrendVal(t, "voltage", val);
             });
 
             dlArr.forEach(item => {
               const t = extractTime(item);
-              const val =
-                Number(
-                  item.DL_Traffic_Volume ??
-                  item.value ??
-                  0
-                ) || 0;
-
-              addTrendVal(t, "dl", val);
+              const { value: rawVal, units } = extractItemData(item, "DL_Traffic_Volume");
+              const valGb = toGB(rawVal, units || item?.units || 'GB');
+              addTrendVal(t, "dl", valGb);
             });
 
             ulArr.forEach(item => {
               const t = extractTime(item);
-              const val =
-                Number(
-                  item.UL_Traffic_Volume ??
-                  item.value ??
-                  0
-                ) || 0;
-
-              addTrendVal(t, "ul", val);
+              const { value: rawVal, units } = extractItemData(item, "UL_Traffic_Volume");
+              const valGb = toGB(rawVal, units || item?.units || 'Kb');
+              addTrendVal(t, "ul", valGb);
             });
 
           } catch (err) {
-            console.warn(
-              `Eroare trend stația ${nodeName}:`,
-              err
-            );
+            console.warn(`Eroare trend stația ${nodeName}:`, err);
           }
         }
 
-        const efficiencyTrendData =
-          Object.values(trendMap)
-            .sort(
-              (a, b) =>
-                String(a.rawTime).localeCompare(
-                  String(b.rawTime)
-                )
-            )
-            .map(item => {
+        const count = validStations.length;
 
-              const trafficGb =
-                (item.dl + item.ul) /
-                (1024 ** 3);
+        const efficiencyTrendData = Object.values(trendMap)
+          .sort((a, b) => String(a.rawTime).localeCompare(String(b.rawTime)))
+          .map(item => {
+            const trafficGb = item.dl + item.ul;
+            const energyKwh = item.power > 0 ? item.power / 1000 : 0;
+            const eficienta = energyKwh > 0 ? trafficGb / energyKwh : 0;
+            const avgVolt = count > 0 ? item.voltage / count : item.voltage;
 
-              const energyKwh =
-                item.power / 1000;
+            return {
+              time: formatDisplayTime(item.rawTime, chartBucketSize),
+              eficienta: +(eficienta || 0).toFixed(4),
+              power: +(item.power || 0).toFixed(2),
+              voltage: +(avgVolt || 0).toFixed(2),
+              traffic: +(trafficGb || 0).toFixed(4)
+            };
+          });
 
-              const eficienta =
-                energyKwh > 0
-                  ? trafficGb / energyKwh
-                  : 0;
-
-              const avgVolt = count > 0 ? item.voltage / count : item.voltage;
-
-              return {
-                time: formatDisplayTime(
-                  item.rawTime,
-                  chartBucketSize
-                ),
-
-                eficienta:
-                  +(eficienta || 0)
-                    .toFixed(4),
-
-                power:
-                  +(item.power || 0)
-                    .toFixed(2),
-
-                voltage:
-                  +(avgVolt || 0)
-                    .toFixed(2),
-
-                traffic:
-                  +(trafficGb || 0)
-                    .toFixed(4)
-              };
-            });
+        const overallEfficiency = sumEnergy > 0 ? sumTraffic / sumEnergy : 0;
 
         setEnergyData({
-          totalEnergy:
-            +totals.energy.toFixed(2),
-
-          avgPower:
-            +(
-              count
-                ? totals.power / count
-                : 0
-            ).toFixed(2),
-
-          avgVoltage:
-            +(
-              count
-                ? totals.voltage / count
-                : 0
-            ).toFixed(2),
-
-          efficiency:
-            +(
-              totals.energy > 0
-                ? totals.traffic /
-                  totals.energy
-                : 0
-            ).toFixed(4),
-
+          totalEnergy: +sumEnergy.toFixed(2),
+          energyUnit: 'kWh',
+          avgPower: validPowerCount > 0 ? +(sumPower / validPowerCount).toFixed(2) : 0,
+          powerUnit: detectedPowerUnit,
+          avgVoltage: validVoltCount > 0 ? +(sumVoltage / validVoltCount).toFixed(2) : 0,
+          voltageUnit: detectedVoltageUnit,
+          efficiency: +overallEfficiency.toFixed(4),
+          efficiency_unit: 'GB/kWh',
           topConsumersData,
-
           efficiencyTrendData,
-
-          stationEnergyData:
-            validStations
+          stationEnergyData: validStations
         });
 
       } catch (error) {
-        console.error(
-          "Eroare la încărcarea datelor Energy & Sustainability:",
-          error
-        );
-
+        console.error("Eroare la încărcarea datelor Energy & Sustainability:", error);
       } finally {
         setLoading(false);
       }
@@ -459,12 +309,7 @@ export default function EnergySustainability({ viewMode }) {
 
     fetchEnergyData();
 
-  }, [
-    selectedStation,
-    chartBucketSize,
-    startDate,
-    endDate
-  ]);
+  }, [selectedStation, chartBucketSize, startDate, endDate]);
 
   if (loading && !energyData) {
     return (
@@ -487,63 +332,39 @@ export default function EnergySustainability({ viewMode }) {
           <select
             id="energyStationSelect"
             value={selectedStation}
-            onChange={(e) =>
-              setSelectedStation(
-                e.target.value
-              )
-            }
+            onChange={(e) => setSelectedStation(e.target.value)}
             className="filter-select"
           >
             <option value="ALL">
               Toate Stațiile (Overview General)
             </option>
 
-            {availableNodes.map(
-              (node) => (
-                <option
-                  key={node}
-                  value={node}
-                >
-                  gNB_{node}
-                </option>
-              )
-            )}
-
+            {availableNodes.map((node) => (
+              <option key={node} value={node}>
+                gNB_{node}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="date-picker-group">
 
           <div className="filter-group">
-            <label>
-              De la:
-            </label>
-
+            <label>De la:</label>
             <input
               type="date"
               value={startDate}
-              onChange={(e) =>
-                setStartDate(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setStartDate(e.target.value)}
               className="filter-input-date"
             />
           </div>
 
           <div className="filter-group">
-            <label>
-              Până la:
-            </label>
-
+            <label>Până la:</label>
             <input
               type="date"
               value={endDate}
-              onChange={(e) =>
-                setEndDate(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setEndDate(e.target.value)}
               className="filter-input-date"
             />
           </div>
@@ -558,34 +379,29 @@ export default function EnergySustainability({ viewMode }) {
 
           <div className="energy-kpi-grid">
             <TotalEnergyCard
-              value={
-                energyData?.totalEnergy ?? 0
-              }
+              value={energyData?.totalEnergy ?? 0}
+              unit={energyData?.energyUnit}
             />
 
             <AveragePowerCard
-              value={
-                energyData?.avgPower ?? 0
-              }
+              value={energyData?.avgPower ?? 0}
+              unit={energyData?.powerUnit}
             />
 
             <AverageVoltageCard
-              value={
-                energyData?.avgVoltage ?? 0
-              }
+              value={energyData?.avgVoltage ?? 0}
+              unit={energyData?.voltageUnit}
             />
 
             <EnergyEfficiencyCard
-              value={
-                energyData?.efficiency ?? 0
-              }
+              value={energyData?.efficiency ?? 0}
+              unit={energyData?.efficiencyUnit}
             />
           </div>
 
           <TopConsumersChart
-            data={
-              energyData?.topConsumersData ?? []
-            }
+            data={energyData?.topConsumersData ?? []}
+            powerUnit={energyData?.powerUnit}
           />
 
           <div className="filters-header" style={{ margin: '20px 0 12px 0', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -604,27 +420,21 @@ export default function EnergySustainability({ viewMode }) {
                 style={{ minWidth: '220px' }}
               >
                 <option value="efficiency_trend">Eficiență Energetică (GB/kWh)</option>
-                <option value="power">Consum Putere (W)</option>
-                <option value="voltage">Tensiune Medie (V)</option>
+                <option value="power">Consum Putere ({energyData?.powerUnit || 'W'})</option>
+                <option value="voltage">Tensiune Medie ({energyData?.voltageUnit || 'V'})</option>
                 <option value="traffic">Trafic Total (GB)</option>
               </select>
             </div>
           </div>
 
           <EfficiencyTrendChart
-            data={
-              energyData?.efficiencyTrendData ?? []
-            }
+            data={energyData?.efficiencyTrendData ?? []}
             bucketSize={chartBucketSize}
-            onBucketChange={(val) =>
-              setChartBucketSize(val)
-            }
-            selectedStation={
-              selectedStation
-            }
-            selectedMetric={
-              selectedMetric
-            }
+            onBucketChange={(val) => setChartBucketSize(val)}
+            selectedStation={selectedStation}
+            selectedMetric={selectedMetric}
+            powerUnit={energyData?.powerUnit}
+            voltageUnit={energyData?.voltageUnit}
           />
 
         </div>
@@ -632,9 +442,7 @@ export default function EnergySustainability({ viewMode }) {
       ) : (
 
         <EnergySustainabilityTable
-          stationEnergyData={
-            energyData?.stationEnergyData ?? []
-          }
+          stationEnergyData={energyData?.stationEnergyData ?? []}
         />
 
       )}

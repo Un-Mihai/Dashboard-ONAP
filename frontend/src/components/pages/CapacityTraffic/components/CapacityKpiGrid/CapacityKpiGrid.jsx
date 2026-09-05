@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getNodeNames, getTelemetryData } from "../../../../../api";
+import { extractMetric, clampPercent } from "../../../../../formatters";
 import './CapacityKpiGrid.css';
 
 export default function CapacityKpiGrid({ 
@@ -13,19 +14,6 @@ export default function CapacityKpiGrid({
     { title: "PRB DL Mediu %", value: "Se încarcă...", type: "" },
     { title: "Peak PRB Slot Max %", value: "Se încarcă...", type: "" }
   ]);
-
-  const extractVal = (data, key) => {
-    if (!data || data[key] === undefined || data[key] === null) return 0;
-    const val = data[key];
-    if (typeof val === 'number') return val;
-    if (Array.isArray(val) && val.length > 0) {
-      return Number(val[0].value ?? val[0][key] ?? Object.values(val[0])[0]) || 0;
-    }
-    if (typeof val === 'object') {
-      return Number(val.value ?? Object.values(val)[0]) || 0;
-    }
-    return Number(val) || 0;
-  };
 
   useEffect(() => {
     const fetchKpis = async () => {
@@ -44,6 +32,10 @@ export default function CapacityKpiGrid({
         let maxPeakPrb = 0;
         let count = 0;
 
+        let detectedDlUnit = 'KB/s';
+        let detectedUlUnit = 'KB/s';
+        let detectedPrbUnit = '%';
+
         for (const node of targetNodes) {
           try {
             const response = await getTelemetryData(
@@ -56,45 +48,63 @@ export default function CapacityKpiGrid({
             );
 
             const data = response.data || {};
-            const dl = extractVal(data, "DL_Throughput");
-            const ul = extractVal(data, "UL_Throughput");
-            const prb = extractVal(data, "PRB_DL");
-            const peak = extractVal(data, "Peak_PRB");
+            const dlMetric = extractMetric(data, "DL_Throughput");
+            const ulMetric = extractMetric(data, "UL_Throughput");
+            const prbMetric = extractMetric(data, "PRB_DL");
+            const peakMetric = extractMetric(data, "Peak_PRB");
 
-            totalDl += dl;
-            totalUl += ul;
-            totalPrb += prb;
-            if (peak > maxPeakPrb) maxPeakPrb = peak;
+            if (dlMetric.units) detectedDlUnit = dlMetric.units;
+            if (ulMetric.units) detectedUlUnit = ulMetric.units;
+            if (prbMetric.units) detectedPrbUnit = prbMetric.units;
+
+            const valDl = Number(dlMetric.value) || 0;
+            const valUl = Number(ulMetric.value) || 0;
+            const valPrb = clampPercent(prbMetric.value);
+            const valPeak = clampPercent(peakMetric.value);
+
+            totalDl += valDl;
+            totalUl += valUl;
+            totalPrb += valPrb;
+
+            if (valPeak > maxPeakPrb) {
+              maxPeakPrb = valPeak;
+            }
+
             count++;
           } catch (err) {
             console.error(`Eroare KPI pentru statia ${node}:`, err);
           }
         }
 
-        const avgDl = count ? totalDl / count : 0;
-        const avgUl = count ? totalUl / count : 0;
-        const avgPrb = count ? totalPrb / count : 0;
+        const avgDl = count > 0 ? (totalDl / count) : 0;
+        const avgUl = count > 0 ? (totalUl / count) : 0;
+        const avgPrb = count > 0 ? (totalPrb / count) : 0;
+
+        const cleanDl = isNaN(avgDl) ? 0 : avgDl;
+        const cleanUl = isNaN(avgUl) ? 0 : avgUl;
+        const cleanPrb = isNaN(avgPrb) ? 0 : avgPrb;
+        const cleanPeak = isNaN(maxPeakPrb) ? 0 : maxPeakPrb;
 
         setKpis([
           {
             title: "DL Throughput Mediu",
-            value: `${Number(avgDl).toFixed(2)} KB/s`,
+            value: `${cleanDl.toFixed(2)} ${detectedDlUnit}`,
             type: ""
           },
           {
             title: "UL Throughput Mediu",
-            value: `${Number(avgUl).toFixed(2)} KB/s`,
+            value: `${cleanUl.toFixed(2)} ${detectedUlUnit}`,
             type: ""
           },
           {
-            title: "PRB DL Mediu %",
-            value: `${Number(avgPrb).toFixed(2)}%`,
-            type: avgPrb >= 70 ? "warning" : ""
+            title: `PRB DL Mediu ${detectedPrbUnit}`,
+            value: `${cleanPrb.toFixed(2)}${detectedPrbUnit}`,
+            type: cleanPrb >= 70 ? "warning" : ""
           },
           {
-            title: "Peak PRB Slot Max %",
-            value: `${Number(maxPeakPrb).toFixed(2)}%`,
-            type: maxPeakPrb >= 100 ? "critical" : ""
+            title: `Peak PRB Slot Max ${detectedPrbUnit}`,
+            value: `${cleanPeak.toFixed(2)}${detectedPrbUnit}`,
+            type: cleanPeak >= 100 ? "critical" : ""
           }
         ]);
       } catch (error) {

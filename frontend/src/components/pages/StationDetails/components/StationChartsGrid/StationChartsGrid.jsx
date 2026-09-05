@@ -15,10 +15,12 @@ import {
 import './StationChartsGrid.css';
 
 export default function StationChartsGrid({
-  data,
-  bucketSize,
-  onBucketChange
+  data = [],
+  bucketSize = '1h',
+  onBucketChange,
+  powerUnit = 'W'
 }) {
+  const displayPowerUnit = powerUnit ? ` ${powerUnit}` : ' W';
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) {
@@ -44,19 +46,24 @@ export default function StationChartsGrid({
           {label}
         </p>
 
-        {payload.map((entry, index) => (
-          <p
-            key={index}
-            style={{
-              margin: 0,
-              color: entry.color,
-              fontSize: '13px',
-              fontWeight: 'bold'
-            }}
-          >
-            {entry.name}: {Number(entry.value).toFixed(2)}
-          </p>
-        ))}
+        {payload.map((entry, index) => {
+          const isPercent = entry.dataKey === 'prb' || entry.dataKey === 'prbPeak';
+          const unit = isPercent ? '%' : displayPowerUnit;
+
+          return (
+            <p
+              key={index}
+              style={{
+                margin: 0,
+                color: entry.color,
+                fontSize: '13px',
+                fontWeight: 'bold'
+              }}
+            >
+              {entry.name}: {Number(entry.value).toFixed(2)}{unit}
+            </p>
+          );
+        })}
       </div>
     );
   };
@@ -64,10 +71,8 @@ export default function StationChartsGrid({
   return (
     <div className="station-charts-grid">
 
-      {}
-
+      {/* GRAFIC CONSUM ENERGIE */}
       <div className="station-card">
-
         <div
           className="chart-header-row"
           style={{
@@ -77,12 +82,9 @@ export default function StationChartsGrid({
             marginBottom: '15px'
           }}
         >
-
           <h3 style={{ margin: 0 }}>
-            Evoluție Consum Energie
+            Evoluție Consum Energie ({powerUnit || 'W'})
           </h3>
-
-          {}
 
           <div
             style={{
@@ -91,7 +93,6 @@ export default function StationChartsGrid({
               gap: '8px'
             }}
           >
-
             <label
               style={{
                 fontSize: '13px',
@@ -103,83 +104,39 @@ export default function StationChartsGrid({
 
             <select
               value={bucketSize}
-              onChange={(e) =>
-                onBucketChange(e.target.value)
-              }
+              onChange={(e) => onBucketChange(e.target.value)}
               className="filter-select"
             >
-              <option value="15m">
-                15m
-              </option>
-
-              <option value="1h">
-                1h
-              </option>
-
-              <option value="1d">
-                1d
-              </option>
+              <option value="15m">15m</option>
+              <option value="1h">1h</option>
+              <option value="1d">1d</option>
             </select>
-
           </div>
-
         </div>
 
         <div className="chart-box-280">
-
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-
+          <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
-
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#30363d"
-              />
-
-              <XAxis
-                dataKey="time"
-                stroke="#8b949e"
-              />
-
-              <YAxis
-                stroke="#8b949e"
-              />
-
-              <Tooltip
-                content={
-                  <CustomTooltip />
-                }
-              />
-
+              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+              <XAxis dataKey="time" stroke="#8b949e" />
+              <YAxis stroke="#8b949e" unit={displayPowerUnit} />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
-
               <Line
                 type="monotone"
                 dataKey="power"
-                name="Consum Energie"
+                name={`Consum Energie (${powerUnit || 'W'})`}
                 stroke="#58a6ff"
                 strokeWidth={2}
                 dot={{ r: 3 }}
               />
-
             </LineChart>
-
           </ResponsiveContainer>
-
         </div>
-
       </div>
 
-
-      {/* ==========================================
-          GRAFIC PRB
-      ========================================== */}
-
+      {/* GRAFIC PRB */}
       <div className="station-card">
-
         <div
           className="chart-header-row"
           style={{
@@ -189,68 +146,36 @@ export default function StationChartsGrid({
             marginBottom: '15px'
           }}
         >
-
           <h3 style={{ margin: 0 }}>
-            Grad de Ocupare Resurse PRB
+            Grad de Ocupare Resurse PRB (%)
           </h3>
-
         </div>
 
         <div className="chart-box-280">
-
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-          >
-
+          <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data}>
-
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#30363d"
-              />
-
-              <XAxis
-                dataKey="time"
-                stroke="#8b949e"
-              />
-
-              <YAxis
-                stroke="#8b949e"
-                domain={[0, 100]}
-                unit="%"
-              />
-
-              <Tooltip
-                content={
-                  <CustomTooltip />
-                }
-              />
-
+              <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
+              <XAxis dataKey="time" stroke="#8b949e" />
+              <YAxis stroke="#8b949e" domain={[0, 100]} unit="%" />
+              <Tooltip content={<CustomTooltip />} />
               <Legend />
-
               <Area
                 type="monotone"
                 dataKey="prbPeak"
-                name="Peak PRB"
+                name="Peak PRB (%)"
                 stroke="#f85149"
                 fill="#f8514922"
               />
-
               <Area
                 type="monotone"
                 dataKey="prb"
-                name="PRB DL"
+                name="PRB DL (%)"
                 stroke="#d29922"
                 fill="#d2992222"
               />
-
             </AreaChart>
-
           </ResponsiveContainer>
-
         </div>
-
       </div>
 
     </div>

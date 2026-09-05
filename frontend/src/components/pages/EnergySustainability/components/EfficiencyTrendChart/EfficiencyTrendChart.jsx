@@ -7,21 +7,50 @@ export default function EfficiencyTrendChart({
   bucketSize = '15m', 
   onBucketChange, 
   selectedStation = 'ALL',
-  selectedMetric = 'efficiency_trend'
+  selectedMetric = 'efficiency_trend',
+  powerUnit = 'W',
+  voltageUnit = 'V'
 }) {
   const stationLabel = selectedStation === 'ALL' ? 'Toată Rețeaua' : `gNB_${selectedStation}`;
+
+  const cleanPowerUnit = powerUnit ? ` ${powerUnit}` : ' W';
+  const cleanVoltageUnit = voltageUnit ? ` ${voltageUnit}` : ' V';
 
   const getChartConfig = () => {
     switch (selectedMetric) {
       case 'power':
-        return { title: 'Consum Putere în Timp', dataKey: 'power', unit: ' W', color: '#e34c26', name: 'Putere (W)' };
+        return { 
+          title: 'Consum Putere în Timp', 
+          dataKey: 'power', 
+          unit: cleanPowerUnit, 
+          color: '#e34c26', 
+          name: `Putere (${powerUnit || 'W'})` 
+        };
       case 'voltage':
-        return { title: 'Tensiune Medie în Timp', dataKey: 'voltage', unit: ' V', color: '#58a6ff', name: 'Tensiune (V)' };
+        return { 
+          title: 'Tensiune Medie în Timp', 
+          dataKey: 'voltage', 
+          unit: cleanVoltageUnit, 
+          color: '#58a6ff', 
+          name: `Tensiune (${voltageUnit || 'V'})` 
+        };
       case 'traffic':
-        return { title: 'Trafic Total în Timp', dataKey: 'traffic', unit: ' GB', color: '#1f6feb', name: 'Trafic (GB)' };
+        return { 
+          title: 'Trafic Total în Timp', 
+          dataKey: 'traffic', 
+          unit: ' GB', 
+          color: '#1f6feb', 
+          name: 'Trafic (GB)' 
+        };
       case 'efficiency_trend':
       default:
-        return { title: 'Eficiența Energetică în Timp', dataKey: 'eficienta', unit: ' GB/kWh', color: '#2ea043', name: 'Eficiență (GB/kWh)' };
+        return { 
+          title: 'Eficiența Energetică în Timp', 
+          dataKey: 'eficienta', 
+          unit: ' GB/kWh', 
+          color: '#2ea043', 
+          name: 'Eficiență (GB/kWh)' 
+        };
     }
   };
 

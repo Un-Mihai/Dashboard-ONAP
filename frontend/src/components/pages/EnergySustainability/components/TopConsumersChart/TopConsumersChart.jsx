@@ -2,10 +2,14 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import './TopConsumersChart.css';
 
-export default function TopConsumersChart({ data = [] }) {
+export default function TopConsumersChart({ data = [], powerUnit = 'W' }) {
+  const displayUnit = powerUnit ? ` ${powerUnit}` : ' W';
+
   return (
     <div className="energy-card top-consumers-card">
-      <h3 style={{ margin: 0, marginBottom: '15px' }}>Top Stații după Consumul Energetic (Watts)</h3>
+      <h3 style={{ margin: 0, marginBottom: '15px' }}>
+        Top Stații după Consumul Energetic ({powerUnit || 'W'})
+      </h3>
       <div className="chart-container-280">
         {data.length === 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#8b949e' }}>
@@ -19,7 +23,7 @@ export default function TopConsumersChart({ data = [] }) {
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#30363d" />
               <XAxis dataKey="name" stroke="#8b949e" tickMargin={8} />
-              <YAxis stroke="#8b949e" unit=" W" width={65} />
+              <YAxis stroke="#8b949e" unit={displayUnit} width={65} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#161b22', 
@@ -30,7 +34,7 @@ export default function TopConsumersChart({ data = [] }) {
               />
               <Bar 
                 dataKey="power" 
-                name="Consum Mediu (W)" 
+                name={`Consum Mediu (${powerUnit || 'W'})`} 
                 fill="#d29922" 
                 radius={[4, 4, 0, 0]} 
                 maxBarSize={60}

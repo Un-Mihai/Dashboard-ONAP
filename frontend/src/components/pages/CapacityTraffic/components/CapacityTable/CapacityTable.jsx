@@ -15,15 +15,19 @@ export default function CapacityTable({ stations = [], viewMode = 'grafic' }) {
     return prb >= 85 ? 'CONGESTIONAT' : prb >= 70 ? 'ÎNCĂRCAT' : 'OPTIM';
   };
 
+  const firstStation = stations[0];
+  const throughputUnitHeader = firstStation?.throughput_unit ? ` (${firstStation.throughput_unit})` : ' (KB/s)';
+  const prbUnitHeader = firstStation?.prb_unit ? ` ${firstStation.prb_unit}` : ' %';
+
   return (
     <table className="capacity-table">
       <thead>
         <tr>
           <th>Stație ID</th>
-          <th>{viewMode === 'grafic' ? 'PRB DL %' : 'PRB DL Utilizat %'}</th>
-          <th>{viewMode === 'grafic' ? 'PRB UL %' : 'PRB UL Utilizat %'}</th>
-          <th>{viewMode === 'grafic' ? 'Peak PRB %' : 'Peak PRB Slot Max %'}</th>
-          <th>{viewMode === 'grafic' ? 'Throughput DL (KB/s)' : 'DL Throughput (KB/s)'}</th>
+          <th>{viewMode === 'grafic' ? `PRB DL${prbUnitHeader}` : `PRB DL Utilizat${prbUnitHeader}`}</th>
+          <th>{viewMode === 'grafic' ? `PRB UL${prbUnitHeader}` : `PRB UL Utilizat${prbUnitHeader}`}</th>
+          <th>{viewMode === 'grafic' ? `Peak PRB${prbUnitHeader}` : `Peak PRB Slot Max${prbUnitHeader}`}</th>
+          <th>{viewMode === 'grafic' ? `Throughput DL${throughputUnitHeader}` : `DL Throughput${throughputUnitHeader}`}</th>
           <th>{viewMode === 'grafic' ? 'Nivel Congestie' : 'Status Ocupare'}</th>
         </tr>
       </thead>
@@ -35,25 +39,30 @@ export default function CapacityTable({ stations = [], viewMode = 'grafic' }) {
             </td>
           </tr>
         ) : (
-          stations.map((st) => (
-            <tr key={st.id || st.node_name || st.name}>
-              <td>{st.name}</td>
-              <td>{st.prbDl}%</td>
-              <td>{st.prbUl}%</td>
-              <td style={{ 
-                color: st.peakPrb >= 100 ? '#da3633' : 'inherit', 
-                fontWeight: st.peakPrb >= 100 ? 'bold' : 'normal' 
-              }}>
-                {st.peakPrb}% {st.peakPrb >= 100 && '(MAX)'}
-              </td>
-              <td>{st.throughputDl} KB/s</td>
-              <td>
-                <span className={`prb-badge ${getPrbBadgeClass(st.prbDl)}`}>
-                  {getStatusText(st.prbDl, viewMode)}
-                </span>
-              </td>
-            </tr>
-          ))
+          stations.map((st) => {
+            const prbUnit = st.prb_unit || '%';
+            const tpUnit = st.throughput_unit ? ` ${st.throughput_unit}` : ' KB/s';
+
+            return (
+              <tr key={st.id || st.node_name || st.name}>
+                <td>{st.name}</td>
+                <td>{st.prbDl}{prbUnit}</td>
+                <td>{st.prbUl}{prbUnit}</td>
+                <td style={{ 
+                  color: st.peakPrb >= 100 ? '#da3633' : 'inherit', 
+                  fontWeight: st.peakPrb >= 100 ? 'bold' : 'normal' 
+                }}>
+                  {st.peakPrb}{prbUnit} {st.peakPrb >= 100 && '(MAX)'}
+                </td>
+                <td>{st.throughputDl}{tpUnit}</td>
+                <td>
+                  <span className={`prb-badge ${getPrbBadgeClass(st.prbDl)}`}>
+                    {getStatusText(st.prbDl, viewMode)}
+                  </span>
+                </td>
+              </tr>
+            );
+          })
         )}
       </tbody>
     </table>
